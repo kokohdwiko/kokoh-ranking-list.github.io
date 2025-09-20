@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Ranking List</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+        }
+        .container-main {
+            min-height: 100vh;
+        }
+        .item-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <div class="container-main p-6 md:p-10 mx-auto">
+        <!-- Header & Controls -->
+        <header class="mb-8">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-center text-teal-400 mb-2">My Ranking List</h1>
+            <p class="text-center text-gray-400 mb-6">Daftar tontonan pribadi yang terfavorit dan paling berkesan.</p>
+            
+            <!-- Search & Filters -->
+            <div class="flex flex-col md:flex-row items-center gap-4">
+                <input id="search-input" type="text" placeholder="Cari berdasarkan judul..." class="flex-grow w-full md:w-auto p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
+                
+                <select id="year-filter" class="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
+                    <option value="">Semua Tahun</option>
+                </select>
+                
+                <select id="genre-filter" class="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
+                    <option value="">Semua Genre</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Ranking Grid -->
+        <div id="ranking-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 md:gap-8">
+            <!-- Content will be injected here by JavaScript -->
+        </div>
+
+        <!-- No Results Message -->
+        <div id="no-results" class="hidden text-center text-gray-500 mt-10 text-lg">
+            Tidak ada item yang cocok dengan kriteria pencarianmu.
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-gray-800 rounded-lg shadow-2xl overflow-y-auto max-w-2xl w-full max-h-[90vh] relative p-6 md:p-8">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-all duration-200 text-2xl font-bold">&times;</button>
+            <div id="modal-content">
+                <!-- Modal content will be injected here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- DATABASE ---
+    // Ganti data di bawah ini dengan daftar tontonan pribadimu
+    const watchlist = [
+        {
+            id: 1,
+            rank: 1,
+            title: "Tengen Toppa Gurren Lagann",
+            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Gurren+Lagann",
+            rating: 10,
+            type: ["Anime"],
+            year: 2007,
+            genres: ["Mecha", "Sci-fi", "Action"],
+            synopsis: "Di masa depan, umat manusia dipaksa hidup di bawah tanah, terancam oleh gempa bumi yang konstan. Sebagian orang tak sadar akan adanya dunia di atas. Sebuah kisah epik dimulai ketika dua pemuda, Simon dan Kamina, menemukan sebuah robot 'gunmen' dan memutuskan untuk menembus lapisan langit.",
+            review: "Tidak ada satu anime pun yang bisa mengalahkan 'epicness' dan semangat dari Gurren Lagann. Motivasi, karakter, dan plotnya dibangun dengan luar biasa. Ini adalah sebuah mahakarya yang wajib ditonton."
+        },
+        {
+            id: 2,
+            rank: 2,
+            title: "Oppenheimer",
+            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Oppenheimer",
+            rating: 9.5,
+            type: ["Film"],
+            year: 2023,
+            genres: ["Biografi", "Drama", "Sejarah"],
+            synopsis: "Kisah tentang J. Robert Oppenheimer, seorang fisikawan teoretis yang memimpin Proyek Manhattan untuk mengembangkan bom atom. Film ini mengeksplorasi dilema moral dan konsekuensi dari penemuannya yang mengubah dunia.",
+            review: "Film ini adalah tontonan yang intens dan sangat sinematik. Kualitas akting, penyutradaraan, dan ceritanya sungguh luar biasa. Sangat direkomendasikan."
+        },
+        {
+            id: 3,
+            rank: 3,
+            title: "Jujutsu Kaisen",
+            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Jujutsu+Kaisen",
+            rating: 9.3,
+            type: ["Anime", "Manga"],
+            year: 2020,
+            genres: ["Shonen", "Fantasi Gelap", "Aksi"],
+            synopsis: "Yuji Itadori, seorang siswa SMA dengan kekuatan fisik yang luar biasa, tiba-tiba terlibat dalam dunia sihir dan kutukan setelah menelan benda terkutuk. Ia bergabung dengan sekolah Jujutsu untuk mengendalikan kekuatannya dan melindungi dunia dari kutukan.",
+            review: "Jujutsu Kaisen menawarkan pertarungan yang menakjubkan, animasi yang super halus, dan karakter-karakter yang mudah disukai. Sebuah anime shonen modern yang sangat solid."
+        },
+        {
+            id: 4,
+            rank: 4,
+            title: "Webtoon: Solo Leveling",
+            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Solo+Leveling",
+            rating: 9.8,
+            type: ["Webtoon", "Manga"],
+            year: 2018,
+            genres: ["Aksi", "Fantasi", "Petualangan"],
+            synopsis: "Setelah munculnya 'gates' yang menghubungkan dunia manusia dengan monster, beberapa orang mendapat kekuatan untuk berburu monster. Jin-woo, seorang pemburu terlemah di dunia, secara ajaib mendapatkan kemampuan untuk 'naik level' dan memulai perjalanannya menuju puncak kekuatan.",
+            review: "Sebuah webtoon yang benar-benar membuat ketagihan. Gambar-gambar yang detail dan alur cerita yang terus berkembang membuat setiap babnya ditunggu-tunggu."
+        },
+        {
+            id: 5,
+            rank: 5,
+            title: "One Piece",
+            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=One+Piece",
+            rating: 9.8,
+            type: ["Anime", "Manga"],
+            year: 1999,
+            genres: ["Petualangan", "Fantasi", "Aksi"],
+            synopsis: "Monkey D. Luffy memulai petualangan untuk menjadi Raja Bajak Laut. Ia mengumpulkan kru yang unik dan menjelajahi lautan luas untuk menemukan harta karun legendaris, One Piece.",
+            review: "Lebih dari sekadar anime shonen, One Piece adalah cerita petualangan seumur hidup dengan karakter-karakter ikonik dan pembangunan dunia yang tak tertandingi."
+        },
+        {
+            id: 6,
+            rank: 6,
+            title: "Parasite",
+            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Parasite",
+            rating: 9.2,
+            type: ["Film"],
+            year: 2019,
+            genres: ["Thriller", "Drama", "Komedi Gelap"],
+            synopsis: "Keluarga miskin Kim merencanakan skema untuk menyusup ke dalam keluarga kaya Park dengan berpura-pura menjadi individu-individu yang sangat terampil. Namun, rencana mereka berbelok ke arah yang tidak terduga.",
+            review: "Sebuah film yang brilian dan penuh kejutan. Menyoroti isu kesenjangan sosial dengan cara yang cerdas dan mendebarkan."
+        },
+        {
+            id: 7,
+            rank: 7,
+            title: "Attack on Titan",
+            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Attack+on+Titan",
+            rating: 9.7,
+            type: ["Anime"],
+            year: 2013,
+            genres: ["Aksi", "Fantasi Gelap", "Drama"],
+            synopsis: "Sisa-sisa umat manusia hidup di balik tembok besar untuk melindungi diri dari Titan, makhluk raksasa humanoid yang memakan manusia. Cerita mengikuti Eren Yeager, yang bersumpah untuk memusnahkan semua Titan setelah kampung halamannya hancur.",
+            review: "Sebuah cerita yang kompleks dan brutal. Plot twist-nya membuat jantung berdebar dan setiap seasonnya selalu memberikan kejutan tak terduga."
+        },
+        {
+            id: 8,
+            rank: 8,
+            title: "Breaking Bad",
+            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Breaking+Bad",
+            rating: 9.6,
+            type: ["Film"],
+            year: 2008,
+            genres: ["Kriminal", "Drama", "Thriller"],
+            synopsis: "Seorang guru kimia SMA, Walter White, didiagnosis menderita kanker paru-paru stadium akhir. Untuk mengamankan masa depan finansial keluarganya, ia memutuskan untuk menggunakan keahlian kimianya untuk memproduksi dan menjual methamphetamine.",
+            review: "Seri TV terbaik sepanjang masa. Perkembangan karakternya sangat dalam dan alur ceritanya terus tegang sampai akhir."
+        },
+    ];
+
+    // --- UTILITY FUNCTIONS ---
+    function formatRating(rating) {
+        return `${rating.toFixed(1)}/10`;
+    }
+
+    function createCard(item) {
+        const div = document.createElement('div');
+        div.setAttribute('data-id', item.id);
+        div.className = 'item-card bg-gray-800 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-300 overflow-hidden';
+        
+        const typeBadges = item.type.map(t => `<span class="bg-teal-600 text-teal-100 text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
+
+        div.innerHTML = `
+            <div class="relative pb-[150%]">
+                <img src="${item.poster}" alt="Poster ${item.title}" class="absolute inset-0 w-full h-full object-cover rounded-t-xl">
+            </div>
+            <div class="p-4 relative">
+                <div class="absolute -top-10 left-4 bg-teal-500 text-gray-900 font-bold text-lg w-10 h-10 flex items-center justify-center rounded-full border-4 border-gray-800 shadow-md">${item.rank}</div>
+                <div class="pt-2">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-medium text-gray-400">${item.year}</span>
+                        <div class="flex items-center text-yellow-400">
+                            <svg class="w-4 h-4 mr-1 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                            <span class="text-sm font-semibold">${formatRating(item.rating)}</span>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold truncate">${item.title}</h3>
+                    <div class="mt-2 flex flex-wrap gap-1">
+                        ${typeBadges}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        div.addEventListener('click', () => showModal(item));
+        return div;
+    }
+
+    function renderWatchlist(data) {
+        const listContainer = document.getElementById('ranking-list');
+        const noResults = document.getElementById('no-results');
+        listContainer.innerHTML = ''; // Clear previous items
+
+        if (data.length === 0) {
+            noResults.classList.remove('hidden');
+        } else {
+            noResults.classList.add('hidden');
+            data.forEach(item => {
+                listContainer.appendChild(createCard(item));
+            });
+        }
+    }
+
+    // --- MODAL LOGIC ---
+    const modal = document.getElementById('detail-modal');
+    const modalContent = document.getElementById('modal-content');
+    const closeModalBtn = document.getElementById('close-modal');
+
+    function showModal(item) {
+        const genres = item.genres.map(g => `<span class="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full">${g}</span>`).join(' ');
+        const types = item.type.map(t => `<span class="bg-teal-600 text-teal-100 text-sm px-3 py-1 rounded-full">${t}</span>`).join(' ');
+
+        modalContent.innerHTML = `
+            <div class="flex flex-col md:flex-row gap-6 items-start">
+                <img src="${item.poster}" alt="Poster ${item.title}" class="w-full md:w-1/3 rounded-lg shadow-xl mb-4 md:mb-0">
+                <div class="flex-grow">
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-teal-400 mb-2">${item.title}</h2>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="text-lg font-semibold text-gray-300">Tahun: ${item.year}</span>
+                    </div>
+                    <div class="flex items-center text-yellow-400 text-lg mb-4">
+                        <svg class="w-5 h-5 mr-2 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                        <span class="font-bold">${formatRating(item.rating)}</span>
+                    </div>
+                    <p class="text-lg mb-4 leading-relaxed">${item.synopsis}</p>
+                    <div class="mb-4">
+                        <h3 class="text-xl font-bold mb-2">Review</h3>
+                        <p class="text-base italic text-gray-400 leading-relaxed">${item.review}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        ${genres}
+                        ${types}
+                    </div>
+                </div>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+    }
+
+    closeModalBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target.id === 'detail-modal') {
+            modal.classList.add('hidden');
+        }
+    });
+
+    // --- FILTER & SEARCH LOGIC ---
+    const searchInput = document.getElementById('search-input');
+    const yearFilter = document.getElementById('year-filter');
+    const genreFilter = document.getElementById('genre-filter');
+
+    // Populate filter options dynamically
+    function populateFilters() {
+        const years = [...new Set(watchlist.map(item => item.year))].sort((a, b) => b - a);
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearFilter.appendChild(option);
+        });
+
+        const allGenres = [...new Set(watchlist.flatMap(item => item.genres))].sort();
+        allGenres.forEach(genre => {
+            const option = document.createElement('option');
+            option.value = genre;
+            option.textContent = genre;
+            genreFilter.appendChild(option);
+        });
+    }
+
+    function applyFiltersAndSearch() {
+        const searchQuery = searchInput.value.toLowerCase();
+        const selectedYear = yearFilter.value;
+        const selectedGenre = genreFilter.value;
+
+        const filteredData = watchlist.filter(item => {
+            const matchesSearch = item.title.toLowerCase().includes(searchQuery);
+            const matchesYear = selectedYear === '' || item.year.toString() === selectedYear;
+            const matchesGenre = selectedGenre === '' || item.genres.includes(selectedGenre);
+            return matchesSearch && matchesYear && matchesGenre;
+        });
+
+        renderWatchlist(filteredData);
+    }
+
+    searchInput.addEventListener('input', applyFiltersAndSearch);
+    yearFilter.addEventListener('change', applyFiltersAndSearch);
+    genreFilter.addEventListener('change', applyFiltersAndSearch);
+
+    // Initial render
+    document.addEventListener('DOMContentLoaded', () => {
+        populateFilters();
+        renderWatchlist(watchlist);
+    });
+
+</script>
+
+</body>
+</html>
