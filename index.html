@@ -6,8 +6,6 @@
     <title>My Ranking List</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PapaParse Library for CSV/TSV parsing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
@@ -37,7 +35,7 @@
         <!-- Header & Controls -->
         <header class="mb-8">
             <h1 class="text-4xl md:text-5xl font-extrabold text-center text-teal-400 mb-2">My Ranking List</h1>
-            <p class="text-center text-gray-400 mb-6">Daftar tontonan/bacaan pribadi.</p>
+            <p class="text-center text-gray-400 mb-6">Daftar tontonan pribadi yang terfavorit dan paling berkesan.</p>
             
             <!-- Search & Filters -->
             <div class="flex flex-col md:flex-row items-center gap-4">
@@ -60,7 +58,7 @@
         <!-- Ranking Grid -->
         <div id="ranking-list" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-4 md:gap-6">
             <!-- Loading message while fetching data -->
-            <div id="loading-message" class="col-span-full text-center text-lg mt-10 text-teal-400">Memuat data dari Google Spreadsheet...</div>
+            <div id="loading-message" class="col-span-full text-center text-lg mt-10 text-teal-400">Memuat data...</div>
             <!-- Content will be injected here by JavaScript -->
         </div>
 
@@ -80,207 +78,214 @@
         </div>
     </div>
 
-<script>
-    // --- DATABASE ---
-    // GANTI URL DI BAWAH INI DENGAN URL GOOGLE SPREADSHEET-MU
-    const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEWbVXq8aJbziT1kkNg_2ny_zehNq8ytWPb0c2h716t1A7pedYRZmCOvsZSha7lV9j-st1Lb4QFVT9/pub?output=csv';
+    <!-- PapaParse Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
-    let watchlist = [];
+    <script>
+        // GANTI URL DI BAWAH INI DENGAN URL SPREADSHEET ANDA
+        const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTEWbVXq8aJbziT1kkNg_2ny_zehNq8ytWPb0c2h716t1A7pedYRZmCOvsZSha7lV9j-st1Lb4QFVT9/pub?output=csv"; 
 
-    // --- UTILITY FUNCTIONS ---
-    function formatRating(rating) {
-        return `${parseFloat(rating).toFixed(1)}/10`;
-    }
+        let watchlist = [];
 
-    function createCard(item, index) {
-        const rank = index + 1;
-        const id = index;
-        const div = document.createElement('div');
-        div.setAttribute('data-id', id);
-        div.className = 'item-card bg-gray-800 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-300 overflow-hidden';
-        
-        const typeArray = Array.isArray(item.type) ? item.type : item.type.split(',').map(s => s.trim());
-        const typeBadges = typeArray.map(t => `<span class="bg-teal-600 text-teal-100 text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
+        // --- UTILITY FUNCTIONS ---
+        function formatRating(rating) {
+            return `${parseFloat(rating).toFixed(1)}/10`;
+        }
 
-        div.innerHTML = `
-            <div class="relative pb-[100%]">
-                <img src="${item.poster}" alt="Poster ${item.title}" class="absolute inset-0 w-full h-full object-cover rounded-t-xl">
-            </div>
-            <div class="p-4 relative">
-                <div class="absolute -top-10 left-4 bg-teal-500 text-gray-900 font-bold text-lg w-10 h-10 flex items-center justify-center rounded-full border-4 border-gray-800 shadow-md">${rank}</div>
-                <div class="pt-2">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-medium text-gray-400">${item.year}</span>
-                        <div class="flex items-center text-yellow-400">
-                            <svg class="w-4 h-4 mr-1 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                            <span class="text-sm font-semibold">${formatRating(item.rating)}</span>
+        function createCard(item, index) {
+            const rank = index + 1;
+            const div = document.createElement('div');
+            div.className = 'item-card bg-gray-800 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-300 overflow-hidden';
+            
+            // Menggunakan koma (,) sebagai pemisah
+            const typeArray = (item.type || '').split(',').map(s => s.trim()).filter(s => s);
+            const typeBadges = typeArray.map(t => `<span class="bg-teal-600 text-teal-100 text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
+
+            div.innerHTML = `
+                <div class="relative pb-[100%]">
+                    <img src="${item.poster}" alt="Poster ${item.title}" class="absolute inset-0 w-full h-full object-cover rounded-t-xl">
+                </div>
+                <div class="p-4 relative">
+                    <div class="absolute -top-10 left-4 bg-teal-500 text-gray-900 font-bold text-lg w-10 h-10 flex items-center justify-center rounded-full border-4 border-gray-800 shadow-md">${rank}</div>
+                    <div class="pt-2">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-400">${item.year}</span>
+                            <div class="flex items-center text-yellow-400">
+                                <svg class="w-4 h-4 mr-1 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                                <span class="text-sm font-semibold">${formatRating(item.rating)}</span>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-bold truncate">${item.title}</h3>
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            ${typeBadges}
                         </div>
                     </div>
-                    <h3 class="text-lg font-bold truncate">${item.title}</h3>
-                    <div class="mt-2 flex flex-wrap gap-1">
-                        ${typeBadges}
+                </div>
+            `;
+
+            div.addEventListener('click', () => showModal(item));
+            return div;
+        }
+
+        function renderWatchlist(data) {
+            const listContainer = document.getElementById('ranking-list');
+            const noResults = document.getElementById('no-results');
+            document.getElementById('loading-message').classList.add('hidden');
+            
+            listContainer.innerHTML = ''; // Clear previous items
+
+            if (data.length === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                // Sort data by rating in descending order
+                data.sort((a, b) => b.rating - a.rating);
+                data.forEach((item, index) => {
+                    listContainer.appendChild(createCard(item, index));
+                });
+            }
+        }
+
+        // --- MODAL LOGIC (Detail) ---
+        const detailModal = document.getElementById('detail-modal');
+        const detailModalContent = document.getElementById('modal-content');
+        const closeDetailModalBtn = document.getElementById('close-modal');
+
+        function showModal(item) {
+            // Menggunakan koma (,) sebagai pemisah
+            const genres = (item.genres || '').split(',').map(s => s.trim());
+            const types = (item.type || '').split(',').map(s => s.trim());
+
+            const genreBadges = genres.map(g => `<span class="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full">${g}</span>`).join(' ');
+            const typeBadges = types.map(t => `<span class="bg-teal-600 text-teal-100 text-sm px-3 py-1 rounded-full">${t}</span>`).join(' ');
+
+            detailModalContent.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-6 items-start">
+                    <img src="${item.poster}" alt="Poster ${item.title}" class="w-full md:w-1/3 rounded-lg shadow-xl mb-4 md:mb-0">
+                    <div class="flex-grow">
+                        <h2 class="text-3xl md:text-4xl font-extrabold text-teal-400 mb-2">${item.title}</h2>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-lg font-semibold text-gray-300">Tahun: ${item.year}</span>
+                        </div>
+                        <div class="flex items-center text-yellow-400 text-lg mb-4">
+                            <svg class="w-5 h-5 mr-2 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                            <span class="font-bold">${formatRating(item.rating)}</span>
+                        </div>
+                        <p class="text-lg mb-4 leading-relaxed">${item.synopsis}</p>
+                        <div class="mb-4">
+                            <h3 class="text-xl font-bold mb-2">Review</h3>
+                            <p class="text-base italic text-gray-400 leading-relaxed">${item.review}</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            ${genreBadges}
+                            ${typeBadges}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+            detailModal.classList.remove('hidden');
+        }
 
-        div.addEventListener('click', () => showModal(item));
-        return div;
-    }
+        closeDetailModalBtn.addEventListener('click', () => {
+            detailModal.classList.add('hidden');
+        });
 
-    function renderWatchlist(data) {
-        const listContainer = document.getElementById('ranking-list');
-        const noResults = document.getElementById('no-results');
-        document.getElementById('loading-message').classList.add('hidden');
-        
-        listContainer.innerHTML = ''; // Clear previous items
+        // Close modal when clicking outside
+        detailModal.addEventListener('click', (e) => {
+            if (e.target.id === 'detail-modal') {
+                detailModal.classList.add('hidden');
+            }
+        });
 
-        if (data.length === 0) {
-            noResults.classList.remove('hidden');
-        } else {
-            noResults.classList.add('hidden');
-            data.forEach((item, index) => {
-                listContainer.appendChild(createCard(item, index));
+        // --- FILTER & SEARCH LOGIC ---
+        const searchInput = document.getElementById('search-input');
+        const yearFilter = document.getElementById('year-filter');
+        const genreFilter = document.getElementById('genre-filter');
+        const typeFilter = document.getElementById('type-filter');
+
+        // Populate filter options dynamically
+        function populateFilters() {
+            if (!watchlist || watchlist.length === 0) return;
+
+            const years = [...new Set(watchlist.map(item => item.year))].sort((a, b) => b - a);
+            yearFilter.innerHTML = '<option value="">Semua Tahun</option>';
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            });
+
+            const allGenres = [...new Set(watchlist.flatMap(item => (item.genres || '').split(',').map(s => s.trim())))].filter(g => g).sort();
+            genreFilter.innerHTML = '<option value="">Semua Genre</option>';
+            allGenres.forEach(genre => {
+                const option = document.createElement('option');
+                option.value = genre;
+                option.textContent = genre;
+                genreFilter.appendChild(option);
+            });
+
+            const allTypes = [...new Set(watchlist.flatMap(item => (item.type || '').split(',').map(s => s.trim())))].filter(t => t).sort();
+            typeFilter.innerHTML = '<option value="">Semua Tipe</option>';
+            allTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                typeFilter.appendChild(option);
             });
         }
-    }
 
-    // --- MODAL LOGIC ---
-    const modal = document.getElementById('detail-modal');
-    const modalContent = document.getElementById('modal-content');
-    const closeModalBtn = document.getElementById('close-modal');
+        function applyFiltersAndSearch() {
+            const searchQuery = searchInput.value.toLowerCase();
+            const selectedYear = yearFilter.value;
+            const selectedGenre = genreFilter.value;
+            const selectedType = typeFilter.value;
 
-    function showModal(item) {
-        const genres = Array.isArray(item.genres) ? item.genres : item.genres.split(',').map(s => s.trim());
-        const types = Array.isArray(item.type) ? item.type : item.type.split(',').map(s => s.trim());
+            const filteredData = watchlist.filter(item => {
+                const matchesSearch = (item.title || '').toLowerCase().includes(searchQuery);
+                const matchesYear = selectedYear === '' || (item.year && item.year.toString() === selectedYear);
+                const itemGenres = (item.genres || '').split(',').map(s => s.trim());
+                const matchesGenre = selectedGenre === '' || itemGenres.includes(selectedGenre);
+                const itemTypes = (item.type || '').split(',').map(s => s.trim());
+                const matchesType = selectedType === '' || itemTypes.includes(selectedType);
+                return matchesSearch && matchesYear && matchesGenre && matchesType;
+            });
 
-        const genreBadges = genres.map(g => `<span class="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full">${g}</span>`).join(' ');
-        const typeBadges = types.map(t => `<span class="bg-teal-600 text-teal-100 text-sm px-3 py-1 rounded-full">${t}</span>`).join(' ');
-
-        modalContent.innerHTML = `
-            <div class="flex flex-col md:flex-row gap-6 items-start">
-                <img src="${item.poster}" alt="Poster ${item.title}" class="w-full md:w-1/3 rounded-lg shadow-xl mb-4 md:mb-0">
-                <div class="flex-grow">
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-teal-400 mb-2">${item.title}</h2>
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        <span class="text-lg font-semibold text-gray-300">Tahun: ${item.year}</span>
-                    </div>
-                    <div class="flex items-center text-yellow-400 text-lg mb-4">
-                        <svg class="w-5 h-5 mr-2 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                        <span class="font-bold">${formatRating(item.rating)}</span>
-                    </div>
-                    <p class="text-lg mb-4 leading-relaxed">${item.synopsis}</p>
-                    <div class="mb-4">
-                        <h3 class="text-xl font-bold mb-2">Review</h3>
-                        <p class="text-base italic text-gray-400 leading-relaxed">${item.review}</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2 mt-4">
-                        ${genreBadges}
-                        ${typeBadges}
-                    </div>
-                </div>
-            </div>
-        `;
-        modal.classList.remove('hidden');
-    }
-
-    closeModalBtn.addEventListener('click', () => {
-        modal.classList.add('hidden');
-    });
-
-    // Close modal when clicking outside
-    modal.addEventListener('click', (e) => {
-        if (e.target.id === 'detail-modal') {
-            modal.classList.add('hidden');
+            renderWatchlist(filteredData);
         }
-    });
 
-    // --- FILTER & SEARCH LOGIC ---
-    const searchInput = document.getElementById('search-input');
-    const yearFilter = document.getElementById('year-filter');
-    const genreFilter = document.getElementById('genre-filter');
-    const typeFilter = document.getElementById('type-filter');
+        searchInput.addEventListener('input', applyFiltersAndSearch);
+        yearFilter.addEventListener('change', applyFiltersAndSearch);
+        genreFilter.addEventListener('change', applyFiltersAndSearch);
+        typeFilter.addEventListener('change', applyFiltersAndSearch);
 
-    // Populate filter options dynamically
-    function populateFilters() {
-        const years = [...new Set(watchlist.map(item => item.year))].sort((a, b) => b - a);
-        yearFilter.innerHTML = '<option value="">Semua Tahun</option>';
-        years.forEach(year => {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year;
-            yearFilter.appendChild(option);
-        });
+        // --- FETCH DATA ---
+        // Menggunakan PapaParse untuk mengambil data CSV dari Google Sheets
+        function fetchDataFromSheet() {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.classList.remove('hidden');
 
-        const allGenres = [...new Set(watchlist.flatMap(item => item.genres.split(',').map(s => s.trim())))].sort();
-        genreFilter.innerHTML = '<option value="">Semua Genre</option>';
-        allGenres.forEach(genre => {
-            const option = document.createElement('option');
-            option.value = genre;
-            option.textContent = genre;
-            genreFilter.appendChild(option);
-        });
-
-        const allTypes = [...new Set(watchlist.flatMap(item => item.type.split(',').map(s => s.trim())))].sort();
-        typeFilter.innerHTML = '<option value="">Semua Tipe</option>';
-        allTypes.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type;
-            typeFilter.appendChild(option);
-        });
-    }
-
-    function applyFiltersAndSearch() {
-        const searchQuery = searchInput.value.toLowerCase();
-        const selectedYear = yearFilter.value;
-        const selectedGenre = genreFilter.value;
-        const selectedType = typeFilter.value;
-
-        const filteredData = watchlist.filter(item => {
-            const matchesSearch = item.title.toLowerCase().includes(searchQuery);
-            const matchesYear = selectedYear === '' || item.year.toString() === selectedYear;
-            const matchesGenre = selectedGenre === '' || item.genres.split(',').map(s => s.trim()).includes(selectedGenre);
-            const matchesType = selectedType === '' || item.type.split(',').map(s => s.trim()).includes(selectedType);
-            return matchesSearch && matchesYear && matchesGenre && matchesType;
-        });
-
-        renderWatchlist(filteredData);
-    }
-
-    searchInput.addEventListener('input', applyFiltersAndSearch);
-    yearFilter.addEventListener('change', applyFiltersAndSearch);
-    genreFilter.addEventListener('change', applyFiltersAndSearch);
-    typeFilter.addEventListener('change', applyFiltersAndSearch);
-
-    // --- INITIAL DATA FETCH ---
-    async function fetchData() {
-        try {
-            const response = await fetch(SPREADSHEET_URL);
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            const csvText = await response.text();
-            
-            // Use PapaParse to convert CSV text to an array of objects
-            Papa.parse(csvText, {
+            Papa.parse(SPREADSHEET_URL, {
+                download: true,
                 header: true,
-                dynamicTyping: true,
+                skipEmptyLines: true,
                 complete: function(results) {
-                    watchlist = results.data;
-                    populateFilters();
-                    renderWatchlist(watchlist);
+                    if (results.data.length > 0) {
+                        watchlist = results.data;
+                        populateFilters();
+                        applyFiltersAndSearch();
+                    } else {
+                        loadingMessage.textContent = 'Gagal memuat data. URL spreadsheet tidak valid atau datanya kosong.';
+                    }
+                },
+                error: function(error) {
+                    loadingMessage.textContent = 'Gagal memuat data. Periksa URL spreadsheet atau koneksi internet Anda.';
+                    console.error("Error parsing CSV:", error);
                 }
             });
-        } catch (error) {
-            console.error("Failed to fetch data:", error);
-            const listContainer = document.getElementById('ranking-list');
-            document.getElementById('loading-message').innerHTML = 'Gagal memuat data. Mohon periksa URL spreadsheet.';
         }
-    }
 
-    document.addEventListener('DOMContentLoaded', fetchData);
-</script>
-
+        fetchDataFromSheet();
+    </script>
 </body>
 </html>
