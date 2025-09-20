@@ -6,6 +6,8 @@
     <title>My Ranking List</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PapaParse Library for CSV/TSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
@@ -35,7 +37,7 @@
         <!-- Header & Controls -->
         <header class="mb-8">
             <h1 class="text-4xl md:text-5xl font-extrabold text-center text-teal-400 mb-2">My Ranking List</h1>
-            <p class="text-center text-gray-400 mb-6">Daftar tontonan pribadi yang terfavorit dan paling berkesan.</p>
+            <p class="text-center text-gray-400 mb-6">Daftar tontonan/bacaan pribadi.</p>
             
             <!-- Search & Filters -->
             <div class="flex flex-col md:flex-row items-center gap-4">
@@ -48,16 +50,22 @@
                 <select id="genre-filter" class="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
                     <option value="">Semua Genre</option>
                 </select>
+                
+                <select id="type-filter" class="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
+                    <option value="">Semua Tipe</option>
+                </select>
             </div>
         </header>
 
         <!-- Ranking Grid -->
-        <div id="ranking-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 md:gap-8">
+        <div id="ranking-list" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-4 md:gap-6">
+            <!-- Loading message while fetching data -->
+            <div id="loading-message" class="col-span-full text-center text-lg mt-10 text-teal-400">Memuat data dari Google Spreadsheet...</div>
             <!-- Content will be injected here by JavaScript -->
         </div>
 
         <!-- No Results Message -->
-        <div id="no-results" class="hidden text-center text-gray-500 mt-10 text-lg">
+        <div id="no-results" class="hidden col-span-full text-center text-gray-500 mt-10 text-lg">
             Tidak ada item yang cocok dengan kriteria pencarianmu.
         </div>
     </div>
@@ -74,124 +82,32 @@
 
 <script>
     // --- DATABASE ---
-    // Ganti data di bawah ini dengan daftar tontonan pribadimu
-    const watchlist = [
-        {
-            id: 1,
-            rank: 1,
-            title: "Tengen Toppa Gurren Lagann",
-            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Gurren+Lagann",
-            rating: 10,
-            type: ["Anime"],
-            year: 2007,
-            genres: ["Mecha", "Sci-fi", "Action"],
-            synopsis: "Di masa depan, umat manusia dipaksa hidup di bawah tanah, terancam oleh gempa bumi yang konstan. Sebagian orang tak sadar akan adanya dunia di atas. Sebuah kisah epik dimulai ketika dua pemuda, Simon dan Kamina, menemukan sebuah robot 'gunmen' dan memutuskan untuk menembus lapisan langit.",
-            review: "Tidak ada satu anime pun yang bisa mengalahkan 'epicness' dan semangat dari Gurren Lagann. Motivasi, karakter, dan plotnya dibangun dengan luar biasa. Ini adalah sebuah mahakarya yang wajib ditonton."
-        },
-        {
-            id: 2,
-            rank: 2,
-            title: "Oppenheimer",
-            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Oppenheimer",
-            rating: 9.5,
-            type: ["Film"],
-            year: 2023,
-            genres: ["Biografi", "Drama", "Sejarah"],
-            synopsis: "Kisah tentang J. Robert Oppenheimer, seorang fisikawan teoretis yang memimpin Proyek Manhattan untuk mengembangkan bom atom. Film ini mengeksplorasi dilema moral dan konsekuensi dari penemuannya yang mengubah dunia.",
-            review: "Film ini adalah tontonan yang intens dan sangat sinematik. Kualitas akting, penyutradaraan, dan ceritanya sungguh luar biasa. Sangat direkomendasikan."
-        },
-        {
-            id: 3,
-            rank: 3,
-            title: "Jujutsu Kaisen",
-            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Jujutsu+Kaisen",
-            rating: 9.3,
-            type: ["Anime", "Manga"],
-            year: 2020,
-            genres: ["Shonen", "Fantasi Gelap", "Aksi"],
-            synopsis: "Yuji Itadori, seorang siswa SMA dengan kekuatan fisik yang luar biasa, tiba-tiba terlibat dalam dunia sihir dan kutukan setelah menelan benda terkutuk. Ia bergabung dengan sekolah Jujutsu untuk mengendalikan kekuatannya dan melindungi dunia dari kutukan.",
-            review: "Jujutsu Kaisen menawarkan pertarungan yang menakjubkan, animasi yang super halus, dan karakter-karakter yang mudah disukai. Sebuah anime shonen modern yang sangat solid."
-        },
-        {
-            id: 4,
-            rank: 4,
-            title: "Webtoon: Solo Leveling",
-            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Solo+Leveling",
-            rating: 9.8,
-            type: ["Webtoon", "Manga"],
-            year: 2018,
-            genres: ["Aksi", "Fantasi", "Petualangan"],
-            synopsis: "Setelah munculnya 'gates' yang menghubungkan dunia manusia dengan monster, beberapa orang mendapat kekuatan untuk berburu monster. Jin-woo, seorang pemburu terlemah di dunia, secara ajaib mendapatkan kemampuan untuk 'naik level' dan memulai perjalanannya menuju puncak kekuatan.",
-            review: "Sebuah webtoon yang benar-benar membuat ketagihan. Gambar-gambar yang detail dan alur cerita yang terus berkembang membuat setiap babnya ditunggu-tunggu."
-        },
-        {
-            id: 5,
-            rank: 5,
-            title: "One Piece",
-            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=One+Piece",
-            rating: 9.8,
-            type: ["Anime", "Manga"],
-            year: 1999,
-            genres: ["Petualangan", "Fantasi", "Aksi"],
-            synopsis: "Monkey D. Luffy memulai petualangan untuk menjadi Raja Bajak Laut. Ia mengumpulkan kru yang unik dan menjelajahi lautan luas untuk menemukan harta karun legendaris, One Piece.",
-            review: "Lebih dari sekadar anime shonen, One Piece adalah cerita petualangan seumur hidup dengan karakter-karakter ikonik dan pembangunan dunia yang tak tertandingi."
-        },
-        {
-            id: 6,
-            rank: 6,
-            title: "Parasite",
-            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Parasite",
-            rating: 9.2,
-            type: ["Film"],
-            year: 2019,
-            genres: ["Thriller", "Drama", "Komedi Gelap"],
-            synopsis: "Keluarga miskin Kim merencanakan skema untuk menyusup ke dalam keluarga kaya Park dengan berpura-pura menjadi individu-individu yang sangat terampil. Namun, rencana mereka berbelok ke arah yang tidak terduga.",
-            review: "Sebuah film yang brilian dan penuh kejutan. Menyoroti isu kesenjangan sosial dengan cara yang cerdas dan mendebarkan."
-        },
-        {
-            id: 7,
-            rank: 7,
-            title: "Attack on Titan",
-            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Attack+on+Titan",
-            rating: 9.7,
-            type: ["Anime"],
-            year: 2013,
-            genres: ["Aksi", "Fantasi Gelap", "Drama"],
-            synopsis: "Sisa-sisa umat manusia hidup di balik tembok besar untuk melindungi diri dari Titan, makhluk raksasa humanoid yang memakan manusia. Cerita mengikuti Eren Yeager, yang bersumpah untuk memusnahkan semua Titan setelah kampung halamannya hancur.",
-            review: "Sebuah cerita yang kompleks dan brutal. Plot twist-nya membuat jantung berdebar dan setiap seasonnya selalu memberikan kejutan tak terduga."
-        },
-        {
-            id: 8,
-            rank: 8,
-            title: "Breaking Bad",
-            poster: "https://placehold.co/400x600/1e293b/a5f3fc?text=Breaking+Bad",
-            rating: 9.6,
-            type: ["Film"],
-            year: 2008,
-            genres: ["Kriminal", "Drama", "Thriller"],
-            synopsis: "Seorang guru kimia SMA, Walter White, didiagnosis menderita kanker paru-paru stadium akhir. Untuk mengamankan masa depan finansial keluarganya, ia memutuskan untuk menggunakan keahlian kimianya untuk memproduksi dan menjual methamphetamine.",
-            review: "Seri TV terbaik sepanjang masa. Perkembangan karakternya sangat dalam dan alur ceritanya terus tegang sampai akhir."
-        },
-    ];
+    // GANTI URL DI BAWAH INI DENGAN URL GOOGLE SPREADSHEET-MU
+    const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEWbVXq8aJbziT1kkNg_2ny_zehNq8ytWPb0c2h716t1A7pedYRZmCOvsZSha7lV9j-st1Lb4QFVT9/pub?output=csv';
+
+    let watchlist = [];
 
     // --- UTILITY FUNCTIONS ---
     function formatRating(rating) {
-        return `${rating.toFixed(1)}/10`;
+        return `${parseFloat(rating).toFixed(1)}/10`;
     }
 
-    function createCard(item) {
+    function createCard(item, index) {
+        const rank = index + 1;
+        const id = index;
         const div = document.createElement('div');
-        div.setAttribute('data-id', item.id);
+        div.setAttribute('data-id', id);
         div.className = 'item-card bg-gray-800 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-300 overflow-hidden';
         
-        const typeBadges = item.type.map(t => `<span class="bg-teal-600 text-teal-100 text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
+        const typeArray = Array.isArray(item.type) ? item.type : item.type.split(',').map(s => s.trim());
+        const typeBadges = typeArray.map(t => `<span class="bg-teal-600 text-teal-100 text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
 
         div.innerHTML = `
-            <div class="relative pb-[150%]">
+            <div class="relative pb-[100%]">
                 <img src="${item.poster}" alt="Poster ${item.title}" class="absolute inset-0 w-full h-full object-cover rounded-t-xl">
             </div>
             <div class="p-4 relative">
-                <div class="absolute -top-10 left-4 bg-teal-500 text-gray-900 font-bold text-lg w-10 h-10 flex items-center justify-center rounded-full border-4 border-gray-800 shadow-md">${item.rank}</div>
+                <div class="absolute -top-10 left-4 bg-teal-500 text-gray-900 font-bold text-lg w-10 h-10 flex items-center justify-center rounded-full border-4 border-gray-800 shadow-md">${rank}</div>
                 <div class="pt-2">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-xs font-medium text-gray-400">${item.year}</span>
@@ -215,14 +131,16 @@
     function renderWatchlist(data) {
         const listContainer = document.getElementById('ranking-list');
         const noResults = document.getElementById('no-results');
+        document.getElementById('loading-message').classList.add('hidden');
+        
         listContainer.innerHTML = ''; // Clear previous items
 
         if (data.length === 0) {
             noResults.classList.remove('hidden');
         } else {
             noResults.classList.add('hidden');
-            data.forEach(item => {
-                listContainer.appendChild(createCard(item));
+            data.forEach((item, index) => {
+                listContainer.appendChild(createCard(item, index));
             });
         }
     }
@@ -233,8 +151,11 @@
     const closeModalBtn = document.getElementById('close-modal');
 
     function showModal(item) {
-        const genres = item.genres.map(g => `<span class="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full">${g}</span>`).join(' ');
-        const types = item.type.map(t => `<span class="bg-teal-600 text-teal-100 text-sm px-3 py-1 rounded-full">${t}</span>`).join(' ');
+        const genres = Array.isArray(item.genres) ? item.genres : item.genres.split(',').map(s => s.trim());
+        const types = Array.isArray(item.type) ? item.type : item.type.split(',').map(s => s.trim());
+
+        const genreBadges = genres.map(g => `<span class="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full">${g}</span>`).join(' ');
+        const typeBadges = types.map(t => `<span class="bg-teal-600 text-teal-100 text-sm px-3 py-1 rounded-full">${t}</span>`).join(' ');
 
         modalContent.innerHTML = `
             <div class="flex flex-col md:flex-row gap-6 items-start">
@@ -254,8 +175,8 @@
                         <p class="text-base italic text-gray-400 leading-relaxed">${item.review}</p>
                     </div>
                     <div class="flex flex-wrap gap-2 mt-4">
-                        ${genres}
-                        ${types}
+                        ${genreBadges}
+                        ${typeBadges}
                     </div>
                 </div>
             </div>
@@ -278,10 +199,12 @@
     const searchInput = document.getElementById('search-input');
     const yearFilter = document.getElementById('year-filter');
     const genreFilter = document.getElementById('genre-filter');
+    const typeFilter = document.getElementById('type-filter');
 
     // Populate filter options dynamically
     function populateFilters() {
         const years = [...new Set(watchlist.map(item => item.year))].sort((a, b) => b - a);
+        yearFilter.innerHTML = '<option value="">Semua Tahun</option>';
         years.forEach(year => {
             const option = document.createElement('option');
             option.value = year;
@@ -289,12 +212,22 @@
             yearFilter.appendChild(option);
         });
 
-        const allGenres = [...new Set(watchlist.flatMap(item => item.genres))].sort();
+        const allGenres = [...new Set(watchlist.flatMap(item => item.genres.split(',').map(s => s.trim())))].sort();
+        genreFilter.innerHTML = '<option value="">Semua Genre</option>';
         allGenres.forEach(genre => {
             const option = document.createElement('option');
             option.value = genre;
             option.textContent = genre;
             genreFilter.appendChild(option);
+        });
+
+        const allTypes = [...new Set(watchlist.flatMap(item => item.type.split(',').map(s => s.trim())))].sort();
+        typeFilter.innerHTML = '<option value="">Semua Tipe</option>';
+        allTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            typeFilter.appendChild(option);
         });
     }
 
@@ -302,12 +235,14 @@
         const searchQuery = searchInput.value.toLowerCase();
         const selectedYear = yearFilter.value;
         const selectedGenre = genreFilter.value;
+        const selectedType = typeFilter.value;
 
         const filteredData = watchlist.filter(item => {
             const matchesSearch = item.title.toLowerCase().includes(searchQuery);
             const matchesYear = selectedYear === '' || item.year.toString() === selectedYear;
-            const matchesGenre = selectedGenre === '' || item.genres.includes(selectedGenre);
-            return matchesSearch && matchesYear && matchesGenre;
+            const matchesGenre = selectedGenre === '' || item.genres.split(',').map(s => s.trim()).includes(selectedGenre);
+            const matchesType = selectedType === '' || item.type.split(',').map(s => s.trim()).includes(selectedType);
+            return matchesSearch && matchesYear && matchesGenre && matchesType;
         });
 
         renderWatchlist(filteredData);
@@ -316,13 +251,35 @@
     searchInput.addEventListener('input', applyFiltersAndSearch);
     yearFilter.addEventListener('change', applyFiltersAndSearch);
     genreFilter.addEventListener('change', applyFiltersAndSearch);
+    typeFilter.addEventListener('change', applyFiltersAndSearch);
 
-    // Initial render
-    document.addEventListener('DOMContentLoaded', () => {
-        populateFilters();
-        renderWatchlist(watchlist);
-    });
+    // --- INITIAL DATA FETCH ---
+    async function fetchData() {
+        try {
+            const response = await fetch(SPREADSHEET_URL);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const csvText = await response.text();
+            
+            // Use PapaParse to convert CSV text to an array of objects
+            Papa.parse(csvText, {
+                header: true,
+                dynamicTyping: true,
+                complete: function(results) {
+                    watchlist = results.data;
+                    populateFilters();
+                    renderWatchlist(watchlist);
+                }
+            });
+        } catch (error) {
+            console.error("Failed to fetch data:", error);
+            const listContainer = document.getElementById('ranking-list');
+            document.getElementById('loading-message').innerHTML = 'Gagal memuat data. Mohon periksa URL spreadsheet.';
+        }
+    }
 
+    document.addEventListener('DOMContentLoaded', fetchData);
 </script>
 
 </body>
