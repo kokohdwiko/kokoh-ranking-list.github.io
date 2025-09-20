@@ -218,7 +218,7 @@
                 yearFilter.appendChild(option);
             });
 
-            const allGenres = [...new Set(watchlist.flatMap(item => (item.genres || '').split(',').map(s => s.trim())))].filter(g => g).sort();
+            const allGenres = [...new Set(watchlist.flatMap(item => (item.genres || '').split(',').map(s => s.trim().toLowerCase())))].filter(g => g).sort();
             genreFilter.innerHTML = '<option value="">Semua Genre</option>';
             allGenres.forEach(genre => {
                 const option = document.createElement('option');
@@ -227,7 +227,7 @@
                 genreFilter.appendChild(option);
             });
 
-            const allTypes = [...new Set(watchlist.flatMap(item => (item.type || '').split(',').map(s => s.trim())))].filter(t => t).sort();
+            const allTypes = [...new Set(watchlist.flatMap(item => (item.type || '').split(',').map(s => s.trim().toLowerCase())))].filter(t => t).sort();
             typeFilter.innerHTML = '<option value="">Semua Tipe</option>';
             allTypes.forEach(type => {
                 const option = document.createElement('option');
@@ -238,17 +238,17 @@
         }
 
         function applyFiltersAndSearch() {
-            const searchQuery = searchInput.value.toLowerCase();
+            const searchQuery = searchInput.value.toLowerCase().trim();
             const selectedYear = yearFilter.value;
-            const selectedGenre = genreFilter.value;
-            const selectedType = typeFilter.value;
+            const selectedGenre = genreFilter.value.toLowerCase().trim();
+            const selectedType = typeFilter.value.toLowerCase().trim();
 
             const filteredData = watchlist.filter(item => {
                 const matchesSearch = (item.title || '').toLowerCase().includes(searchQuery);
                 const matchesYear = selectedYear === '' || (item.year && item.year.toString() === selectedYear);
-                const itemGenres = (item.genres || '').split(',').map(s => s.trim());
+                const itemGenres = (item.genres || '').split(',').map(s => s.trim().toLowerCase());
                 const matchesGenre = selectedGenre === '' || itemGenres.includes(selectedGenre);
-                const itemTypes = (item.type || '').split(',').map(s => s.trim());
+                const itemTypes = (item.type || '').split(',').map(s => s.trim().toLowerCase());
                 const matchesType = selectedType === '' || itemTypes.includes(selectedType);
                 return matchesSearch && matchesYear && matchesGenre && matchesType;
             });
