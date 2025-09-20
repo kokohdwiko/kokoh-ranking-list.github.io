@@ -244,10 +244,19 @@
             const filteredData = watchlist.filter(item => {
                 const matchesSearch = (item.title || '').toLowerCase().includes(searchQuery);
                 const matchesYear = selectedYear === '' || (item.year && item.year.toString() === selectedYear);
-                const itemGenres = (item.genres || '').split(',').map(s => s.trim().toLowerCase());
+
+                const itemGenres = (item.genres || '')
+                    .split(',')
+                    .map(s => s.trim().toLowerCase())
+                    .filter(Boolean);
                 const matchesGenre = selectedGenre === '' || itemGenres.includes(selectedGenre);
-                const itemTypes = (item.type || '').split(',').map(s => s.trim().toLowerCase());
+
+                const itemTypes = (item.type || '')
+                    .split(',')
+                    .map(s => s.trim().toLowerCase())
+                    .filter(Boolean);
                 const matchesType = selectedType === '' || itemTypes.includes(selectedType);
+
                 return matchesSearch && matchesYear && matchesGenre && matchesType;
             });
 
