@@ -36,6 +36,23 @@
         .item-card:hover .poster-image {
             transform: scale(1.08);
         }
+        .ranking-badge {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: #e50914; /* Netflix red */
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            border: 2px solid #141414;
+        }
     </style>
 </head>
 <body class="bg-[#141414] text-[#e5e5e5]">
@@ -114,18 +131,19 @@
             div.innerHTML = `
                 <div class="relative pb-[150%]">
                     <img src="${item.poster}" alt="Poster ${item.title}" class="poster-image absolute inset-0 w-full h-full object-cover rounded-md">
-                </div>
-                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-4">
-                    <div class="flex justify-between items-end">
-                        <div class="flex-1 min-w-0">
-                            <h3 class="text-sm md:text-md font-bold text-white truncate">${item.title}</h3>
-                            <span class="text-xs text-gray-300">${item.year}</span>
-                        </div>
-                        <div class="flex items-center text-yellow-400 ml-2 text-sm md:text-md">
-                            <svg class="w-4 h-4 mr-1 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                            <span class="font-semibold">${formatRating(item.rating)}</span>
+                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-4">
+                        <div class="flex justify-between items-end">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm md:text-md font-bold text-white truncate">${item.title}</h3>
+                                <span class="text-xs text-gray-300">${item.year}</span>
+                            </div>
+                            <div class="flex items-center text-yellow-400 ml-2 text-sm md:text-md">
+                                <svg class="w-4 h-4 mr-1 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                                <span class="font-semibold">${formatRating(item.rating)}</span>
+                            </div>
                         </div>
                     </div>
+                    <div class="ranking-badge">${rank}</div>
                 </div>
             `;
 
