@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-s1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Ranking List</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -10,8 +10,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a202c; /* Dark background */
-            color: #e2e8f0; /* Light text */
+            background-color: #141414; /* Netflix dark background */
+            color: #e5e5e5; /* Netflix light text */
         }
         .container-main {
             min-height: 100vh;
@@ -19,46 +19,55 @@
         .item-card {
             transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
         .item-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
+            z-index: 10;
         }
         .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+        }
+        .poster-image {
+            transition: transform 0.3s ease-in-out;
+        }
+        .item-card:hover .poster-image {
+            transform: scale(1.08);
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white">
+<body class="bg-[#141414] text-[#e5e5e5]">
 
     <div class="container-main p-6 md:p-10 mx-auto">
         <!-- Header & Controls -->
-        <header class="mb-8">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-center text-teal-400 mb-2">My Ranking List</h1>
+        <header class="mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-center text-[#e50914] mb-2">My Ranking List</h1>
             <p class="text-center text-gray-400 mb-6">Daftar ranking tontonan/bacaan pribadi.</p>
             
             <!-- Search & Filters -->
-            <div class="flex flex-col md:flex-row items-center gap-4">
-                <input id="search-input" type="text" placeholder="Cari berdasarkan judul..." class="flex-grow w-full md:w-auto p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4">
+                <input id="search-input" type="text" placeholder="Cari berdasarkan judul..." class="flex-grow w-full md:w-auto p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200 placeholder-gray-400">
                 
-                <select id="year-filter" class="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
+                <select id="year-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
                     <option value="">Semua Tahun</option>
                 </select>
                 
-                <select id="genre-filter" class="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
+                <select id="genre-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
                     <option value="">Semua Genre</option>
                 </select>
                 
-                <select id="type-filter" class="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200">
+                <select id="type-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
                     <option value="">Semua Tipe</option>
                 </select>
             </div>
         </header>
 
         <!-- Ranking Grid -->
-        <div id="ranking-list" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-4 md:gap-6">
+        <div id="ranking-list" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4 lg:gap-5">
             <!-- Loading message while fetching data -->
-            <div id="loading-message" class="col-span-full text-center text-lg mt-10 text-teal-400">Memuat data...</div>
+            <div id="loading-message" class="col-span-full text-center text-lg mt-10 text-gray-400">Memuat data...</div>
             <!-- Content will be injected here by JavaScript -->
         </div>
 
@@ -70,8 +79,8 @@
 
     <!-- Detail Modal -->
     <div id="detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-overlay">
-        <div class="bg-gray-800 rounded-lg shadow-2xl overflow-y-auto max-w-2xl w-full max-h-[90vh] relative p-6 md:p-8">
-            <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-all duration-200 text-2xl font-bold">&times;</button>
+        <div class="bg-[#222] rounded-lg shadow-2xl overflow-y-auto max-w-4xl w-full max-h-[90vh] relative p-6 md:p-8">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-all duration-200 text-3xl font-bold">&times;</button>
             <div id="modal-content">
                 <!-- Modal content will be injected here by JavaScript -->
             </div>
@@ -96,29 +105,25 @@
         function createCard(item, index) {
             const rank = index + 1;
             const div = document.createElement('div');
-            div.className = 'item-card bg-gray-800 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transform transition-all duration-300 overflow-hidden';
+            div.className = 'item-card rounded-md shadow-lg transform hover:scale-105 transition-all duration-300';
             
             // Menggunakan koma (,) sebagai pemisah
             const typeArray = (item.type || '').split(',').map(s => s.trim()).filter(s => s);
-            const typeBadges = typeArray.map(t => `<span class="bg-teal-600 text-teal-100 text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
+            const typeBadges = typeArray.map(t => `<span class="bg-[#e50914] text-white text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
 
             div.innerHTML = `
-                <div class="relative pb-[100%]">
-                    <img src="${item.poster}" alt="Poster ${item.title}" class="absolute inset-0 w-full h-full object-cover rounded-t-xl">
+                <div class="relative pb-[150%]">
+                    <img src="${item.poster}" alt="Poster ${item.title}" class="poster-image absolute inset-0 w-full h-full object-cover rounded-md">
                 </div>
-                <div class="p-4 relative">
-                    <div class="absolute -top-10 left-4 bg-teal-500 text-gray-900 font-bold text-lg w-10 h-10 flex items-center justify-center rounded-full border-4 border-gray-800 shadow-md">${rank}</div>
-                    <div class="pt-2">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-medium text-gray-400">${item.year}</span>
-                            <div class="flex items-center text-yellow-400">
-                                <svg class="w-4 h-4 mr-1 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                                <span class="text-sm font-semibold">${formatRating(item.rating)}</span>
-                            </div>
+                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-4">
+                    <div class="flex justify-between items-end">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-sm md:text-md font-bold text-white truncate">${item.title}</h3>
+                            <span class="text-xs text-gray-300">${item.year}</span>
                         </div>
-                        <h3 class="text-lg font-bold truncate">${item.title}</h3>
-                        <div class="mt-2 flex flex-wrap gap-1">
-                            ${typeBadges}
+                        <div class="flex items-center text-yellow-400 ml-2 text-sm md:text-md">
+                            <svg class="w-4 h-4 mr-1 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                            <span class="font-semibold">${formatRating(item.rating)}</span>
                         </div>
                     </div>
                 </div>
@@ -158,13 +163,13 @@
             const types = (item.type || '').split(',').map(s => s.trim());
 
             const genreBadges = genres.map(g => `<span class="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full">${g}</span>`).join(' ');
-            const typeBadges = types.map(t => `<span class="bg-teal-600 text-teal-100 text-sm px-3 py-1 rounded-full">${t}</span>`).join(' ');
+            const typeBadges = types.map(t => `<span class="bg-red-700 text-white text-sm px-3 py-1 rounded-full">${t}</span>`).join(' ');
 
             detailModalContent.innerHTML = `
                 <div class="flex flex-col md:flex-row gap-6 items-start">
                     <img src="${item.poster}" alt="Poster ${item.title}" class="w-full md:w-1/3 rounded-lg shadow-xl mb-4 md:mb-0">
                     <div class="flex-grow">
-                        <h2 class="text-3xl md:text-4xl font-extrabold text-teal-400 mb-2">${item.title}</h2>
+                        <h2 class="text-3xl md:text-4xl font-extrabold text-[#e50914] mb-2">${item.title}</h2>
                         <div class="flex flex-wrap gap-2 mb-4">
                             <span class="text-lg font-semibold text-gray-300">Tahun: ${item.year}</span>
                         </div>
@@ -285,7 +290,7 @@
                         watchlist = results.data.map(item => ({
                             ...item,
                             // Ganti koma (,) dengan titik (.) agar bisa di-parse
-                            rating: parseFloat(item.rating.replace(',', '.')),
+                            rating: parseFloat((item.rating || '0').toString().replace(',', '.')),
                             year: parseInt(item.year)
                         }));
                         populateFilters();
