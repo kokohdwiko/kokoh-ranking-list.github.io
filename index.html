@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-s1.0">
     <title>My Ranking List</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -89,7 +89,8 @@
 
         // --- UTILITY FUNCTIONS ---
         function formatRating(rating) {
-            return `${parseFloat(rating).toFixed(1)}/10`;
+            // Perbaiki: pastikan rating ditampilkan dengan satu angka desimal
+            return `${(parseFloat(rating) || 0).toFixed(1)}/10`;
         }
 
         function createCard(item, index) {
@@ -283,7 +284,8 @@
                         // Perbaiki masalah tipe data: konversi string ke angka
                         watchlist = results.data.map(item => ({
                             ...item,
-                            rating: parseFloat(item.rating),
+                            // Ganti koma (,) dengan titik (.) agar bisa di-parse
+                            rating: parseFloat(item.rating.replace(',', '.')),
                             year: parseInt(item.year)
                         }));
                         populateFilters();
