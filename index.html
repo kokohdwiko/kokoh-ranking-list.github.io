@@ -35,7 +35,7 @@
         <!-- Header & Controls -->
         <header class="mb-8">
             <h1 class="text-4xl md:text-5xl font-extrabold text-center text-teal-400 mb-2">My Ranking List</h1>
-            <p class="text-center text-gray-400 mb-6">Daftar tontonan pribadi yang terfavorit dan paling berkesan.</p>
+            <p class="text-center text-gray-400 mb-6">Daftar ranking tontonan/bacaan pribadi.</p>
             
             <!-- Search & Filters -->
             <div class="flex flex-col md:flex-row items-center gap-4">
@@ -271,7 +271,12 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     if (results.data.length > 0) {
-                        watchlist = results.data;
+                        // Perbaiki masalah tipe data: konversi string ke angka
+                        watchlist = results.data.map(item => ({
+                            ...item,
+                            rating: parseFloat(item.rating),
+                            year: parseInt(item.year)
+                        }));
                         populateFilters();
                         applyFiltersAndSearch();
                     } else {
