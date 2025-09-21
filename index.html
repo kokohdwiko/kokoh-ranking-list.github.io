@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Ranking List</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -58,12 +57,10 @@
 <body class="bg-[#141414] text-[#e5e5e5]">
 
     <div class="container-main p-6 md:p-10 mx-auto">
-        <!-- Header & Controls -->
         <header class="mb-8 md:mb-12">
             <h1 class="text-4xl md:text-5xl font-extrabold text-center text-[#e50914] mb-2">My Ranking List</h1>
             <p class="text-center text-gray-400 mb-6">Daftar ranking tontonan/bacaan pribadi.</p>
             
-            <!-- Search & Filters -->
             <div class="flex flex-col md:flex-row items-center justify-center gap-4">
                 <input id="search-input" type="text" placeholder="Cari berdasarkan judul..." class="flex-grow w-full md:w-auto p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200 placeholder-gray-400">
                 
@@ -78,44 +75,40 @@
                 <select id="type-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
                     <option value="">Semua Tipe</option>
                 </select>
+                
+                <select id="rating-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
+                    <option value="">Semua Rating</option>
+                </select>
             </div>
         </header>
 
-        <!-- Ranking Grid -->
         <div id="ranking-list" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4 lg:gap-5">
-            <!-- Loading message while fetching data -->
             <div id="loading-message" class="col-span-full text-center text-lg mt-10 text-gray-400">Memuat data...</div>
-            <!-- Content will be injected here by JavaScript -->
-        </div>
+            </div>
 
-        <!-- No Results Message -->
         <div id="no-results" class="hidden col-span-full text-center text-gray-500 mt-10 text-lg">
             Tidak ada item yang cocok dengan kriteria pencarianmu.
         </div>
     </div>
 
-    <!-- Detail Modal -->
     <div id="detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-overlay">
         <div class="bg-[#222] rounded-lg shadow-2xl overflow-y-auto max-w-4xl w-full max-h-[90vh] relative p-6 md:p-8">
             <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-all duration-200 text-3xl font-bold">&times;</button>
             <div id="modal-content">
-                <!-- Modal content will be injected here by JavaScript -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- PapaParse Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
         // GANTI URL DI BAWAH INI DENGAN URL SPREADSHEET ANDA
-        const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTEWbVXq8aJbziT1kkNg_2ny_zehNq8ytWPb0c2h716t1A7pedYRZmCOvsZSha7lV9j-st1Lb4QFVT9/pub?output=csv"; 
+        const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTEWbVXq8aJbziT1kkNg_2ny_zehNq8ytWPb0c2h716t1A7pedYRZmCOvsZSha7lV9j-st1Lb4QFVT9/pub?output=csv";
 
         let watchlist = [];
 
         // --- UTILITY FUNCTIONS ---
         function formatRating(rating) {
-            // Perbaiki: pastikan rating ditampilkan dengan satu angka desimal
             return `${(parseFloat(rating) || 0).toFixed(1)}/10`;
         }
 
@@ -124,7 +117,6 @@
             const div = document.createElement('div');
             div.className = 'item-card rounded-md shadow-lg transform hover:scale-105 transition-all duration-300';
             
-            // Menggunakan koma (,) sebagai pemisah
             const typeArray = (item.type || '').split(',').map(s => s.trim()).filter(s => s);
             const typeBadges = typeArray.map(t => `<span class="bg-[#e50914] text-white text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
 
@@ -176,7 +168,6 @@
         const closeDetailModalBtn = document.getElementById('close-modal');
 
         function showModal(item) {
-            // Menggunakan koma (,) sebagai pemisah
             const genres = (item.genres || '').split(',').map(s => s.trim());
             const types = (item.type || '').split(',').map(s => s.trim());
 
@@ -226,11 +217,13 @@
         const yearFilter = document.getElementById('year-filter');
         const genreFilter = document.getElementById('genre-filter');
         const typeFilter = document.getElementById('type-filter');
+        const ratingFilter = document.getElementById('rating-filter');
 
         // Populate filter options dynamically
         function populateFilters() {
             if (!watchlist || watchlist.length === 0) return;
 
+            // Populate Year Filter
             const years = [...new Set(watchlist.map(item => item.year))].sort((a, b) => b - a);
             yearFilter.innerHTML = '<option value="">Semua Tahun</option>';
             years.forEach(year => {
@@ -240,23 +233,34 @@
                 yearFilter.appendChild(option);
             });
 
+            // Populate Genre Filter
             const allGenres = [...new Set(watchlist.flatMap(item => (item.genres || '').split(',').map(s => s.trim().toLowerCase())))].filter(g => g).sort();
             genreFilter.innerHTML = '<option value="">Semua Genre</option>';
             allGenres.forEach(genre => {
                 const option = document.createElement('option');
                 option.value = genre;
-                option.textContent = genre;
+                option.textContent = genre.charAt(0).toUpperCase() + genre.slice(1);
                 genreFilter.appendChild(option);
             });
 
+            // Populate Type Filter
             const allTypes = [...new Set(watchlist.flatMap(item => (item.type || '').split(',').map(s => s.trim().toLowerCase())))].filter(t => t).sort();
             typeFilter.innerHTML = '<option value="">Semua Tipe</option>';
             allTypes.forEach(type => {
                 const option = document.createElement('option');
                 option.value = type;
-                option.textContent = type;
+                option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
                 typeFilter.appendChild(option);
             });
+
+            // NEW: Populate Rating Filter
+            ratingFilter.innerHTML = '<option value="">Semua Rating</option>';
+            for (let i = 10; i >= 1; i--) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `≥ ${i}/10`;
+                ratingFilter.appendChild(option);
+            }
         }
 
         function applyFiltersAndSearch() {
@@ -264,10 +268,12 @@
             const selectedYear = yearFilter.value;
             const selectedGenre = genreFilter.value.toLowerCase().trim();
             const selectedType = typeFilter.value.toLowerCase().trim();
+            const selectedRating = parseFloat(ratingFilter.value) || 0; // Get rating value
 
             const filteredData = watchlist.filter(item => {
                 const matchesSearch = (item.title || '').toLowerCase().includes(searchQuery);
                 const matchesYear = selectedYear === '' || (item.year && item.year.toString() === selectedYear);
+                const matchesRating = selectedRating === 0 || (item.rating >= selectedRating); // Check if rating is greater than or equal to selected value
 
                 const itemGenres = (item.genres || '')
                     .split(',')
@@ -281,7 +287,7 @@
                     .filter(Boolean);
                 const matchesType = selectedType === '' || itemTypes.includes(selectedType);
 
-                return matchesSearch && matchesYear && matchesGenre && matchesType;
+                return matchesSearch && matchesYear && matchesGenre && matchesType && matchesRating;
             });
 
             renderWatchlist(filteredData);
@@ -291,9 +297,9 @@
         yearFilter.addEventListener('change', applyFiltersAndSearch);
         genreFilter.addEventListener('change', applyFiltersAndSearch);
         typeFilter.addEventListener('change', applyFiltersAndSearch);
+        ratingFilter.addEventListener('change', applyFiltersAndSearch); // Add listener for the new rating filter
 
         // --- FETCH DATA ---
-        // Menggunakan PapaParse untuk mengambil data CSV dari Google Sheets
         function fetchDataFromSheet() {
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.classList.remove('hidden');
@@ -304,10 +310,8 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     if (results.data.length > 0) {
-                        // Perbaiki masalah tipe data: konversi string ke angka
                         watchlist = results.data.map(item => ({
                             ...item,
-                            // Ganti koma (,) dengan titik (.) agar bisa di-parse
                             rating: parseFloat((item.rating || '0').toString().replace(',', '.')),
                             year: parseInt(item.year)
                         }));
