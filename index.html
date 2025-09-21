@@ -287,6 +287,20 @@
                     .filter(Boolean);
                 const matchesType = selectedType === '' || itemTypes.includes(selectedType);
 
+                 // 🔍 Debug log
+        console.log({
+            title: item.title,
+            year: item.year,
+            genres: item.genres,
+            type: item.type,
+            rating: item.rating,
+            matchesSearch,
+            matchesYear,
+            matchesGenre,
+            matchesType,
+            matchesRating
+        });
+
                 return matchesSearch && matchesYear && matchesGenre && matchesType && matchesRating;
             });
 
