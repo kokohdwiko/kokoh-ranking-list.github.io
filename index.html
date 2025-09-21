@@ -143,24 +143,46 @@
             return div;
         }
 
-        function renderWatchlist(data) {
-            const listContainer = document.getElementById('ranking-list');
-            const noResults = document.getElementById('no-results');
-            document.getElementById('loading-message').classList.add('hidden');
-            
-            listContainer.innerHTML = ''; // Clear previous items
+        // Render Watchlist
+function renderWatchlist(data) {
+    const listContainer = document.getElementById('ranking-list');
+    const noResults = document.getElementById('no-results');
+    const loadingMessage = document.getElementById('loading-message');
 
-            if (data.length === 0) {
-                noResults.classList.remove('hidden');
-            } else {
-                noResults.classList.add('hidden');
-                // Sort data by rating in descending order
-                data.sort((a, b) => b.rating - a.rating);
-                data.forEach((item, index) => {
-                    listContainer.appendChild(createCard(item, index));
-                });
-            }
-        }
+    console.log("renderWatchlist() dipanggil, jumlah data:", data.length);
+
+    if (!listContainer) {
+        console.error("❌ ERROR: #ranking-list tidak ditemukan di DOM");
+        return;
+    }
+    if (!noResults) {
+        console.warn("⚠️ WARNING: #no-results tidak ditemukan di DOM");
+    }
+    if (!loadingMessage) {
+        console.warn("⚠️ WARNING: #loading-message tidak ditemukan di DOM");
+    }
+
+    // Sembunyikan loading kalau ada
+    if (loadingMessage) loadingMessage.classList.add('hidden');
+
+    // Clear sebelumnya
+    listContainer.innerHTML = '';
+
+    // Kalau tidak ada hasil
+    if (data.length === 0) {
+        if (noResults) noResults.classList.remove('hidden');
+    } else {
+        if (noResults) noResults.classList.add('hidden');
+
+        // Urutkan dari rating terbesar ke kecil
+        data.sort((a, b) => b.rating - a.rating);
+
+        // Render card
+        data.forEach((item, index) => {
+            listContainer.appendChild(createCard(item, index));
+        });
+    }
+}
 
         // --- MODAL LOGIC (Detail) ---
         const detailModal = document.getElementById('detail-modal');
@@ -263,49 +285,37 @@
             }
         }
 
-        function applyFiltersAndSearch() {
-            const searchQuery = searchInput.value.toLowerCase().trim();
-            const selectedYear = yearFilter.value;
-            const selectedGenre = genreFilter.value.toLowerCase().trim();
-            const selectedType = typeFilter.value.toLowerCase().trim();
-            const selectedRating = parseFloat(ratingFilter.value) || 0; // Get rating value
+        // Apply Filters and Search
+function applyFiltersAndSearch() {
+    const searchInput = document.getElementById('search-input');
+    const filterSelect = document.getElementById('filter-select');
 
-            const filteredData = watchlist.filter(item => {
-                const matchesSearch = (item.title || '').toLowerCase().includes(searchQuery);
-                const matchesYear = selectedYear === '' || (item.year && item.year.toString() === selectedYear);
-                const matchesRating = selectedRating === 0 || (item.rating >= selectedRating); // Check if rating is greater than or equal to selected value
+    if (!searchInput) {
+        console.error("❌ ERROR: #search-input tidak ditemukan di DOM");
+        return;
+    }
+    if (!filterSelect) {
+        console.error("❌ ERROR: #filter-select tidak ditemukan di DOM");
+        return;
+    }
 
-                const itemGenres = (item.genres || '')
-                    .split(',')
-                    .map(s => s.trim().toLowerCase())
-                    .filter(Boolean);
-                const matchesGenre = selectedGenre === '' || itemGenres.includes(selectedGenre);
+    const query = searchInput.value.toLowerCase();
+    const filter = filterSelect.value;
 
-                const itemTypes = (item.type || '')
-                    .split(',')
-                    .map(s => s.trim().toLowerCase())
-                    .filter(Boolean);
-                const matchesType = selectedType === '' || itemTypes.includes(selectedType);
+    console.log("applyFiltersAndSearch() dipanggil, query:", query, "filter:", filter);
 
-                 // 🔍 Debug log
-        console.log({
-            title: item.title,
-            year: item.year,
-            genres: item.genres,
-            type: item.type,
-            rating: item.rating,
-            matchesSearch,
-            matchesYear,
-            matchesGenre,
-            matchesType,
-            matchesRating
-        });
+    let filteredData = watchlistData.filter(item => {
+        // cek search
+        const matchesSearch = item.title.toLowerCase().includes(query);
 
-                return matchesSearch && matchesYear && matchesGenre && matchesType && matchesRating;
-            });
+        // cek filter
+        const matchesFilter = filter === "all" || item.category === filter;
 
-            renderWatchlist(filteredData);
-        }
+        return matchesSearch && matchesFilter;
+    });
+
+    renderWatchlist(filteredData);
+}
 
         searchInput.addEventListener('input', applyFiltersAndSearch);
         yearFilter.addEventListener('change', applyFiltersAndSearch);
