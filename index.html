@@ -143,46 +143,26 @@
             return div;
         }
 
-        // Render Watchlist
-function renderWatchlist(data) {
-    const listContainer = document.getElementById('ranking-list');
-    const noResults = document.getElementById('no-results');
-    const loadingMessage = document.getElementById('loading-message');
+        function renderWatchlist(data) {
+            const listContainer = document.getElementById('ranking-list');
+            const noResults = document.getElementById('no-results');
+            const loadingMessage = document.getElementById('loading-message');
+            
+            if (loadingMessage) loadingMessage.classList.add('hidden');
+            if (!listContainer || !noResults) return;
 
-    console.log("renderWatchlist() dipanggil, jumlah data:", data.length);
+            listContainer.innerHTML = '';
 
-    if (!listContainer) {
-        console.error("❌ ERROR: #ranking-list tidak ditemukan di DOM");
-        return;
-    }
-    if (!noResults) {
-        console.warn("⚠️ WARNING: #no-results tidak ditemukan di DOM");
-    }
-    if (!loadingMessage) {
-        console.warn("⚠️ WARNING: #loading-message tidak ditemukan di DOM");
-    }
-
-    // Sembunyikan loading kalau ada
-    if (loadingMessage) loadingMessage.classList.add('hidden');
-
-    // Clear sebelumnya
-    listContainer.innerHTML = '';
-
-    // Kalau tidak ada hasil
-    if (data.length === 0) {
-        if (noResults) noResults.classList.remove('hidden');
-    } else {
-        if (noResults) noResults.classList.add('hidden');
-
-        // Urutkan dari rating terbesar ke kecil
-        data.sort((a, b) => b.rating - a.rating);
-
-        // Render card
-        data.forEach((item, index) => {
-            listContainer.appendChild(createCard(item, index));
-        });
-    }
-}
+            if (data.length === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                data.sort((a, b) => b.rating - a.rating);
+                data.forEach((item, index) => {
+                    listContainer.appendChild(createCard(item, index));
+                });
+            }
+        }
 
         // --- MODAL LOGIC (Detail) ---
         const detailModal = document.getElementById('detail-modal');
@@ -245,8 +225,7 @@ function renderWatchlist(data) {
         function populateFilters() {
             if (!watchlist || watchlist.length === 0) return;
 
-            // Populate Year Filter
-            const years = [...new Set(watchlist.map(item => item.year))].sort((a, b) => b - a);
+            const years = [...new Set(watchlist.map(item => item.year))].filter(y => y).sort((a, b) => b - a);
             yearFilter.innerHTML = '<option value="">Semua Tahun</option>';
             years.forEach(year => {
                 const option = document.createElement('option');
@@ -255,7 +234,6 @@ function renderWatchlist(data) {
                 yearFilter.appendChild(option);
             });
 
-            // Populate Genre Filter
             const allGenres = [...new Set(watchlist.flatMap(item => (item.genres || '').split(',').map(s => s.trim().toLowerCase())))].filter(g => g).sort();
             genreFilter.innerHTML = '<option value="">Semua Genre</option>';
             allGenres.forEach(genre => {
@@ -265,7 +243,6 @@ function renderWatchlist(data) {
                 genreFilter.appendChild(option);
             });
 
-            // Populate Type Filter
             const allTypes = [...new Set(watchlist.flatMap(item => (item.type || '').split(',').map(s => s.trim().toLowerCase())))].filter(t => t).sort();
             typeFilter.innerHTML = '<option value="">Semua Tipe</option>';
             allTypes.forEach(type => {
@@ -275,7 +252,6 @@ function renderWatchlist(data) {
                 typeFilter.appendChild(option);
             });
 
-            // NEW: Populate Rating Filter
             ratingFilter.innerHTML = '<option value="">Semua Rating</option>';
             for (let i = 10; i >= 1; i--) {
                 const option = document.createElement('option');
@@ -285,48 +261,40 @@ function renderWatchlist(data) {
             }
         }
 
-        // Apply Filters and Search
-function applyFiltersAndSearch() {
-    const searchInput = document.getElementById('search-input');
-    const filterSelect = document.getElementById('filter-select');
+        function applyFiltersAndSearch() {
+            const searchQuery = searchInput.value.toLowerCase().trim();
+            const selectedYear = yearFilter.value;
+            const selectedGenre = genreFilter.value.toLowerCase().trim();
+            const selectedType = typeFilter.value.toLowerCase().trim();
+            const selectedRating = parseFloat(ratingFilter.value) || 0;
 
-    if (!searchInput) {
-        console.error("❌ ERROR: #search-input tidak ditemukan di DOM");
-        return;
-    }
-    if (!filterSelect) {
-        console.error("❌ ERROR: #filter-select tidak ditemukan di DOM");
-        return;
-    }
+            const filteredData = watchlist.filter(item => {
+                const matchesSearch = (item.title || '').toLowerCase().includes(searchQuery);
+                const matchesYear = selectedYear === '' || (item.year && item.year.toString() === selectedYear);
+                const matchesRating = selectedRating === 0 || (item.rating >= selectedRating);
 
-    const query = searchInput.value.toLowerCase();
-    const filter = filterSelect.value;
+                const itemGenres = (item.genres || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+                const matchesGenre = selectedGenre === '' || itemGenres.includes(selectedGenre);
 
-    console.log("applyFiltersAndSearch() dipanggil, query:", query, "filter:", filter);
+                const itemTypes = (item.type || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+                const matchesType = selectedType === '' || itemTypes.includes(selectedType);
 
-    let filteredData = watchlistData.filter(item => {
-        // cek search
-        const matchesSearch = item.title.toLowerCase().includes(query);
+                return matchesSearch && matchesYear && matchesGenre && matchesType && matchesRating;
+            });
 
-        // cek filter
-        const matchesFilter = filter === "all" || item.category === filter;
-
-        return matchesSearch && matchesFilter;
-    });
-
-    renderWatchlist(filteredData);
-}
+            renderWatchlist(filteredData);
+        }
 
         searchInput.addEventListener('input', applyFiltersAndSearch);
         yearFilter.addEventListener('change', applyFiltersAndSearch);
         genreFilter.addEventListener('change', applyFiltersAndSearch);
         typeFilter.addEventListener('change', applyFiltersAndSearch);
-        ratingFilter.addEventListener('change', applyFiltersAndSearch); // Add listener for the new rating filter
+        ratingFilter.addEventListener('change', applyFiltersAndSearch);
 
         // --- FETCH DATA ---
         function fetchDataFromSheet() {
             const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.classList.remove('hidden');
+            if (loadingMessage) loadingMessage.classList.remove('hidden');
 
             Papa.parse(SPREADSHEET_URL, {
                 download: true,
@@ -342,11 +310,11 @@ function applyFiltersAndSearch() {
                         populateFilters();
                         applyFiltersAndSearch();
                     } else {
-                        loadingMessage.textContent = 'Gagal memuat data. URL spreadsheet tidak valid atau datanya kosong.';
+                        if (loadingMessage) loadingMessage.textContent = 'Gagal memuat data. URL spreadsheet tidak valid atau datanya kosong.';
                     }
                 },
                 error: function(error) {
-                    loadingMessage.textContent = 'Gagal memuat data. Periksa URL spreadsheet atau koneksi internet Anda.';
+                    if (loadingMessage) loadingMessage.textContent = 'Gagal memuat data. Periksa URL spreadsheet atau koneksi internet Anda.';
                     console.error("Error parsing CSV:", error);
                 }
             });
