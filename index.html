@@ -3,331 +3,631 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Ranking List</title>
+    <title>My Music Rank - Web Pribadi</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for aesthetic icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #141414; /* Netflix dark background */
-            color: #e5e5e5; /* Netflix light text */
+        /* Mengatur font Inter */
+        html { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar untuk tabel */
+        .overflow-x-auto::-webkit-scrollbar {
+            height: 8px;
         }
-        .container-main {
-            min-height: 100vh;
-        }
-        .item-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-        .item-card:hover {
-            transform: scale(1.05);
-            z-index: 10;
-        }
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(10px);
-        }
-        .poster-image {
-            transition: transform 0.3s ease-in-out;
-        }
-        .item-card:hover .poster-image {
-            transform: scale(1.08);
-        }
-        .ranking-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #e50914; /* Netflix red */
-            color: white;
-            font-size: 1rem;
-            font-weight: bold;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 20;
-            border: 2px solid #141414;
+        .overflow-x-auto::-webkit-scrollbar-thumb {
+            background-color: #4f46e5; /* indigo-600 */
+            border-radius: 4px;
         }
     </style>
 </head>
-<body class="bg-[#141414] text-[#e5e5e5]">
+<body class="bg-gray-50 antialiased">
 
-    <div class="container-main p-6 md:p-10 mx-auto">
-        <header class="mb-8 md:mb-12">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-center text-[#e50914] mb-2">My Ranking List</h1>
-            <p class="text-center text-gray-400 mb-6">Daftar ranking tontonan/bacaan pribadi.</p>
-            
-            <div class="flex flex-col md:flex-row items-center justify-center gap-4">
-                <input id="search-input" type="text" placeholder="Cari berdasarkan judul..." class="flex-grow w-full md:w-auto p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200 placeholder-gray-400">
-                
-                <select id="year-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
-                    <option value="">Semua Tahun</option>
-                </select>
-                
-                <select id="genre-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
-                    <option value="">Semua Genre</option>
-                </select>
-                
-                <select id="type-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
-                    <option value="">Semua Tipe</option>
-                </select>
-                
-                <select id="rating-filter" class="p-3 rounded-md bg-[#333] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#e50914] transition-all duration-200">
-                    <option value="">Semua Rating</option>
-                </select>
-            </div>
-        </header>
-
-        <div id="ranking-list" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4 lg:gap-5">
-            <div id="loading-message" class="col-span-full text-center text-lg mt-10 text-gray-400">Memuat data...</div>
-            </div>
-
-        <div id="no-results" class="hidden col-span-full text-center text-gray-500 mt-10 text-lg">
-            Tidak ada item yang cocok dengan kriteria pencarianmu.
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-900 shadow-xl">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 py-3">
+            <span class="text-2xl font-bold text-white tracking-wide flex items-center">
+                <i data-lucide="music-3" class="w-7 h-7 mr-2 text-amber-300"></i>
+                My Music Rank
+            </span>
         </div>
-    </div>
+    </header>
 
-    <div id="detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-overlay">
-        <div class="bg-[#222] rounded-lg shadow-2xl overflow-y-auto max-w-4xl w-full max-h-[90vh] relative p-6 md:p-8">
-            <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-all duration-200 text-3xl font-bold">&times;</button>
-            <div id="modal-content">
-                </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- Main Content Container (Diubah ke w-full) -->
+    <main id="app-container" class="w-full mx-auto"></main>
+    
+    <!-- PapaParse CDN for CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
     <script>
-        // GANTI URL DI BAWAH INI DENGAN URL SPREADSHEET ANDA
-        const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTEWbVXq8aJbziT1kkNg_2ny_zehNq8ytWPb0c2h716t1A7pedYRZmCOvsZSha7lV9j-st1Lb4QFVT9/pub?output=csv";
+        // --- KONFIGURASI DATA SHEET GOOGLE ---
+        const RANK_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSwYuvRz6Ep8zBNCRiRzWY-IjcXSPW2z1KKGe-rEL-URY2S7PZdvAzZ8KW_Shf-SZ02EiUpxvbvQiJQ/pub?output=csv&gid=0';
+        const IMAGE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSwYuvRz6Ep8zBNCRiRzWY-IjcXSPW2z1KKGe-rEL-URY2S7PZdvAzZ8KW_Shf-SZ02EiUpxvbvQiJQ/pub?output=csv&gid=171271964';
 
-        let watchlist = [];
+        const mockImageData = [
+            { tag: 'Lady Gaga', link_image: 'https://placehold.co/400x400/1e293b/FFFFFF?text=Lady+Gaga+Image' },
+            { tag: 'Bruno Mars', link_image: 'https://placehold.co/400x400/1e293b/FFFFFF?text=Bruno+Mars+Image' },
+        ];
+        // ------------------------------------
+
+        // --- GLOBAL STATE ---
+        const appState = {
+            rankData: [],
+            imageDataMap: {},
+            isLoading: true,
+            error: null,
+            view: 'home', // 'home' atau 'detail'
+            selectedTag: null,
+            currentFilter: 'All',
+            searchTerm: '',
+            entriesPerPage: 25, 
+            currentPage: 1,
+            selectedLanguage: 'All', 
+        };
+
+        const appContainer = document.getElementById('app-container');
 
         // --- UTILITY FUNCTIONS ---
-        function formatRating(rating) {
-            return `${(parseFloat(rating) || 0).toFixed(1)}/10`;
-        }
 
-        function createCard(item, index) {
-            const rank = index + 1;
-            const div = document.createElement('div');
-            div.className = 'item-card rounded-md shadow-lg transform hover:scale-105 transition-all duration-300';
-            
-            const typeArray = (item.type || '').split(',').map(s => s.trim()).filter(s => s);
-            const typeBadges = typeArray.map(t => `<span class="bg-[#e50914] text-white text-xs font-semibold px-2 py-0.5 rounded-full">${t}</span>`).join(' ');
-
-            div.innerHTML = `
-                <div class="relative pb-[150%]">
-                    <img src="${item.poster}" alt="Poster ${item.title}" class="poster-image absolute inset-0 w-full h-full object-cover rounded-md">
-                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-4">
-                        <div class="flex justify-between items-end">
-                            <div class="flex-1 min-w-0">
-                                <h3 class="text-sm md:text-md font-bold text-white truncate">${item.title}</h3>
-                                <span class="text-xs text-gray-300">${item.year}</span>
-                            </div>
-                            <div class="flex items-center text-yellow-400 ml-2 text-sm md:text-md">
-                                <svg class="w-4 h-4 mr-1 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                                <span class="font-semibold">${formatRating(item.rating)}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="ranking-badge">${rank}</div>
-                </div>
-            `;
-
-            div.addEventListener('click', () => showModal(item));
-            return div;
-        }
-
-        function renderWatchlist(data) {
-            const listContainer = document.getElementById('ranking-list');
-            const noResults = document.getElementById('no-results');
-            const loadingMessage = document.getElementById('loading-message');
-            
-            if (loadingMessage) loadingMessage.classList.add('hidden');
-            if (!listContainer || !noResults) return;
-
-            listContainer.innerHTML = '';
-
-            if (data.length === 0) {
-                noResults.classList.remove('hidden');
-            } else {
-                noResults.classList.add('hidden');
-                data.sort((a, b) => b.rating - a.rating);
-                data.forEach((item, index) => {
-                    listContainer.appendChild(createCard(item, index));
+        /**
+         * Mem-fetch dan mem-parse CSV menggunakan PapaParse (global object).
+         */
+        const fetchCSV = async (url) => {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Gagal mengambil data dari URL: ${url}`);
+            }
+            const csvText = await response.text();
+            return new Promise((resolve, reject) => {
+                // Papa harus ada di window.
+                if (typeof window.Papa === 'undefined') {
+                    reject(new Error("PapaParse library belum dimuat."));
+                    return;
+                }
+                window.Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => resolve(results.data),
+                    error: (err) => reject(err),
                 });
-            }
-        }
+            });
+        };
 
-        // --- MODAL LOGIC (Detail) ---
-        const detailModal = document.getElementById('detail-modal');
-        const detailModalContent = document.getElementById('modal-content');
-        const closeDetailModalBtn = document.getElementById('close-modal');
+        /**
+         * Debounce function untuk membatasi seberapa sering suatu fungsi dipanggil
+         */
+        const debounce = (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        };
 
-        function showModal(item) {
-            const genres = (item.genres || '').split(',').map(s => s.trim());
-            const types = (item.type || '').split(',').map(s => s.trim());
-
-            const genreBadges = genres.map(g => `<span class="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full">${g}</span>`).join(' ');
-            const typeBadges = types.map(t => `<span class="bg-red-700 text-white text-sm px-3 py-1 rounded-full">${t}</span>`).join(' ');
-
-            detailModalContent.innerHTML = `
-                <div class="flex flex-col md:flex-row gap-6 items-start">
-                    <img src="${item.poster}" alt="Poster ${item.title}" class="w-full md:w-1/3 rounded-lg shadow-xl mb-4 md:mb-0">
-                    <div class="flex-grow">
-                        <h2 class="text-3xl md:text-4xl font-extrabold text-[#e50914] mb-2">${item.title}</h2>
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            <span class="text-lg font-semibold text-gray-300">Tahun: ${item.year}</span>
-                        </div>
-                        <div class="flex items-center text-yellow-400 text-lg mb-4">
-                            <svg class="w-5 h-5 mr-2 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                            <span class="font-bold">${formatRating(item.rating)}</span>
-                        </div>
-                        <p class="text-lg mb-4 leading-relaxed">${item.synopsis}</p>
-                        <div class="mb-4">
-                            <h3 class="text-xl font-bold mb-2">Review</h3>
-                            <p class="text-base italic text-gray-400 leading-relaxed">${item.review}</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2 mt-4">
-                            ${genreBadges}
-                            ${typeBadges}
-                        </div>
-                    </div>
-                </div>
-            `;
-            detailModal.classList.remove('hidden');
-        }
-
-        closeDetailModalBtn.addEventListener('click', () => {
-            detailModal.classList.add('hidden');
-        });
-
-        // Close modal when clicking outside
-        detailModal.addEventListener('click', (e) => {
-            if (e.target.id === 'detail-modal') {
-                detailModal.classList.add('hidden');
-            }
-        });
-
-        // --- FILTER & SEARCH LOGIC ---
-        const searchInput = document.getElementById('search-input');
-        const yearFilter = document.getElementById('year-filter');
-        const genreFilter = document.getElementById('genre-filter');
-        const typeFilter = document.getElementById('type-filter');
-        const ratingFilter = document.getElementById('rating-filter');
-
-        // Populate filter options dynamically
-        function populateFilters() {
-            if (!watchlist || watchlist.length === 0) return;
-
-            // Populate Year Filter
-            const years = [...new Set(watchlist.map(item => item.year))].filter(y => y).sort((a, b) => b - a);
-            yearFilter.innerHTML = '<option value="">Semua Tahun</option>';
-            years.forEach(year => {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                yearFilter.appendChild(option);
+        /**
+         * Mendapatkan daftar tag unik dari data ranking.
+         */
+        const getUniqueTags = () => {
+            if (!appState.rankData.length) return [];
+            const tags = new Set();
+            
+            // 1. Filter data berdasarkan bahasa yang dipilih (jika bukan 'All')
+            const filteredByLang = appState.rankData.filter(item => {
+                if (appState.selectedLanguage === 'All') return true;
+                return (item.language || '').trim() === appState.selectedLanguage;
             });
 
-            // Populate Genre Filter
-            const allGenres = [...new Set(watchlist.flatMap(item => (item.genres || '').split(',').map(s => s.trim().toLowerCase())))].filter(g => g).sort();
-            genreFilter.innerHTML = '<option value="">Semua Genre</option>';
-            allGenres.forEach(genre => {
-                const option = document.createElement('option');
-                option.value = genre;
-                option.textContent = genre.charAt(0).toUpperCase() + genre.slice(1);
-                genreFilter.appendChild(option);
+            // 2. Kumpulkan tag dari data yang sudah terfilter
+            filteredByLang.forEach(item => {
+                const itemTags = (item.tag || '').split(',').map(t => t.trim()).filter(t => t);
+                itemTags.forEach(tag => tags.add(tag));
             });
-
-            // Populate Type Filter
-            const allTypes = [...new Set(watchlist.flatMap(item => (item.type || '').split(',').map(s => s.trim().toLowerCase())))].filter(t => t).sort();
-            typeFilter.innerHTML = '<option value="">Semua Tipe</option>';
-            allTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type;
-                option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-                typeFilter.appendChild(option);
-            });
-
-            // NEW: Populate Rating Filter with unique values from the data
-            const allRatings = [...new Set(watchlist.map(item => item.rating))].filter(r => r || r === 0).sort((a, b) => b - a);
-            ratingFilter.innerHTML = '<option value="">Semua Rating</option>';
-            allRatings.forEach(rating => {
-                const option = document.createElement('option');
-                option.value = rating;
-                option.textContent = formatRating(rating);
-                ratingFilter.appendChild(option);
-            });
-        }
-
-        // Apply Filters and Search
-        function applyFiltersAndSearch() {
-            const searchQuery = searchInput.value.toLowerCase().trim();
-            const selectedYear = yearFilter.value;
-            const selectedGenre = genreFilter.value.toLowerCase().trim();
-            const selectedType = typeFilter.value.toLowerCase().trim();
-            const selectedRating = ratingFilter.value !== '' ? parseFloat(ratingFilter.value) : null;
-
-            const filteredData = watchlist.filter(item => {
-                const matchesSearch = (item.title || '').toLowerCase().includes(searchQuery);
-                const matchesYear = selectedYear === '' || (item.year && item.year.toString() === selectedYear);
-                // NEW: Check for exact match on rating
-                const matchesRating = selectedRating === null || item.rating === selectedRating;
-
-                const itemGenres = (item.genres || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-                const matchesGenre = selectedGenre === '' || itemGenres.includes(selectedGenre);
-
-                const itemTypes = (item.type || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-                const matchesType = selectedType === '' || itemTypes.includes(selectedType);
-
-                return matchesSearch && matchesYear && matchesGenre && matchesType && matchesRating;
-            });
-
-            renderWatchlist(filteredData);
-        }
-
-        searchInput.addEventListener('input', applyFiltersAndSearch);
-        yearFilter.addEventListener('change', applyFiltersAndSearch);
-        genreFilter.addEventListener('change', applyFiltersAndSearch);
-        typeFilter.addEventListener('change', applyFiltersAndSearch);
-        ratingFilter.addEventListener('change', applyFiltersAndSearch);
-
-        // --- FETCH DATA ---
-        function fetchDataFromSheet() {
-            const loadingMessage = document.getElementById('loading-message');
-            if (loadingMessage) loadingMessage.classList.remove('hidden');
-
-            Papa.parse(SPREADSHEET_URL, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    if (results.data.length > 0) {
-                        watchlist = results.data.map(item => ({
-                            ...item,
-                            rating: parseFloat((item.rating || '0').toString().replace(',', '.')),
-                            year: parseInt(item.year)
-                        }));
-                        populateFilters();
-                        applyFiltersAndSearch();
-                    } else {
-                        if (loadingMessage) loadingMessage.textContent = 'Gagal memuat data. URL spreadsheet tidak valid atau datanya kosong.';
-                    }
-                },
-                error: function(error) {
-                    if (loadingMessage) loadingMessage.textContent = 'Gagal memuat data. Periksa URL spreadsheet atau koneksi internet Anda.';
-                    console.error("Error parsing CSV:", error);
+            
+            const sortedTags = ['Semua Artist', ...Array.from(tags).sort((a, b) => a.localeCompare(b))];
+            return sortedTags;
+        };
+        
+        /**
+         * Mendapatkan daftar bahasa unik dari data ranking.
+         */
+        const getUniqueLanguages = () => {
+            if (!appState.rankData.length) return [];
+            const languages = new Set();
+            appState.rankData.forEach(item => {
+                const lang = (item.language || '').trim();
+                if (lang) {
+                    languages.add(lang);
                 }
             });
-        }
+            return ['All', ...Array.from(languages).sort()];
+        };
 
-        fetchDataFromSheet();
+
+        // --- STATE & RENDER MANAGEMENT ---
+
+        /**
+         * Fungsi utama untuk merender tampilan berdasarkan appState.
+         */
+        const renderApp = () => {
+            if (appState.isLoading) {
+                appContainer.innerHTML = renderLoadingState();
+            } else if (appState.view === 'home') {
+                appContainer.innerHTML = renderHomePage();
+                attachHomePageListeners();
+            } else if (appState.view === 'detail') {
+                appContainer.innerHTML = renderDetailPage();
+                attachDetailPageListeners();
+            }
+            // Setelah render, panggil lucide.createIcons() untuk ikon
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        };
+
+        /**
+         * Renders the loading or error state HTML.
+         */
+        const renderLoadingState = () => `
+            <div class="p-4 sm:p-8">
+                <div class="flex flex-col items-center justify-center h-64 text-indigo-700">
+                    <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
+                    <p class="mt-3 text-lg">Memuat data ranking dari Google Sheets...</p>
+                    ${appState.error ? `
+                        <div class="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                            <p class="font-bold">Error:</p>
+                            <p>${appState.error}</p>
+                            <p class="mt-2 text-sm">Cek kembali URL publikasi dan GID sheet Anda.</p>
+                        </div>
+                    ` : `<p class="mt-1 text-xs text-gray-500">Mohon tunggu sebentar...</p>`}
+                </div>
+            </div>
+        `;
+
+        // --- HOME PAGE RENDERING & LOGIC ---
+
+        const getFilteredAndPaginatedTags = () => {
+            let result = getUniqueTags(); // Sudah difilter berdasarkan bahasa di sini
+
+            // 1. Filter Alphabet (Bekerja pada hasil uniqueTags yang sudah difilter bahasa)
+            if (appState.currentFilter !== 'All') {
+                result = result.filter(tag => {
+                    if (tag === 'Semua Artist') return appState.currentFilter === 'All';
+                    const firstChar = tag.charAt(0).toUpperCase();
+                    if (appState.currentFilter === '#') {
+                        return !firstChar.match(/[A-Z]/i);
+                    }
+                    return firstChar === appState.currentFilter;
+                });
+            }
+
+            // 2. Search
+            if (appState.searchTerm) {
+                const lowerSearch = appState.searchTerm.toLowerCase();
+                // Filter tag yang namanya match ATAU punya lagu yang match dengan search term
+                result = result.filter(tag => {
+                    const isTagMatch = tag.toLowerCase().includes(lowerSearch);
+                    
+                    // Cek apakah ada lagu dari tag ini yang match dengan search term
+                    const isArtistMatch = appState.rankData.some(item =>
+                        (tag === 'Semua Artist' || (item.tag || '').split(',').map(t => t.trim()).includes(tag)) &&
+                        (item.tag?.toLowerCase().includes(lowerSearch) ||
+                         item.artist?.toLowerCase().includes(lowerSearch)) // HANYA TAG dan ARTIST
+                    );
+                    
+                    return isTagMatch || isArtistMatch;
+                });
+            }
+
+            // 3. Pagination
+            const startIndex = (appState.currentPage - 1) * appState.entriesPerPage;
+            const endIndex = startIndex + appState.entriesPerPage;
+            return {
+                totalCount: result.length,
+                paginatedTags: result.slice(startIndex, endIndex),
+            };
+        };
+
+        const renderHomePage = () => {
+            const { totalCount, paginatedTags } = getFilteredAndPaginatedTags();
+            const totalPages = Math.ceil(totalCount / appState.entriesPerPage);
+            const uniqueLanguages = getUniqueLanguages();
+
+            const filterButtons = ['All', '#', ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))].map(char => `
+                <button data-filter="${char}"
+                    class="filter-btn px-3 py-1 text-sm font-medium rounded-full transition-colors 
+                    ${appState.currentFilter === char
+                        ? 'bg-amber-500 text-indigo-900 shadow-lg' // Warna filter aktif diubah
+                        : 'text-indigo-600 hover:bg-indigo-200 bg-white'
+                    }">
+                    ${char}
+                </button>
+            `).join('');
+
+            // Penyesuaian Grid Artist untuk tampilan yang lebih besar dan responsif
+            const artistGrid = paginatedTags.length === 0 ? `
+                <div class="text-center p-10 bg-white rounded-xl shadow-lg">
+                    <i data-lucide="frown" class="w-12 h-12 mx-auto text-indigo-400"></i>
+                    <p class="mt-3 text-lg text-gray-600">Tidak ada artis yang ditemukan dengan filter saat ini.</p>
+                </div>
+            ` : `
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 sm:gap-6">
+                    ${paginatedTags.map(tag => `
+                        <div data-tag="${tag}"
+                            class="artist-card group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.05] bg-white border border-gray-200">
+                            <div class="relative w-full aspect-square bg-gray-100 overflow-hidden">
+                                <img
+                                    src="${appState.imageDataMap[tag]}"
+                                    alt="${tag}"
+                                    class="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-80"
+                                    onerror="this.onerror=null;this.src='https://placehold.co/400x400/1e293b/FFFFFF?text=NO+IMAGE';"
+                                />
+                            </div>
+                            <!-- Tinggi minimum h-12 untuk mencegah pemotongan nama -->
+                            <div class="p-3 text-center h-12 flex items-center justify-center bg-indigo-100 group-hover:bg-amber-300 transition-colors">
+                                <h4 class="text-sm font-semibold text-indigo-900">${tag}</h4>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            const paginationControls = `
+                <div class="flex justify-between items-center mt-8 p-3 bg-indigo-100 rounded-xl shadow-inner">
+                    <span class="text-sm text-gray-700">
+                        Menampilkan ${Math.min(totalCount, (appState.currentPage - 1) * appState.entriesPerPage + 1)} - ${Math.min(totalCount, appState.currentPage * appState.entriesPerPage)} dari ${totalCount} entri
+                    </span>
+                    <div class="flex space-x-2">
+                        <button data-page="${appState.currentPage - 1}"
+                            ${appState.currentPage === 1 ? 'disabled' : ''}
+                            class="page-btn px-3 py-1 text-sm rounded-lg bg-white border border-gray-300 text-indigo-700 disabled:opacity-50 hover:bg-amber-200 transition-colors">
+                            Sebelumnya
+                        </button>
+                        <span class="px-3 py-1 text-sm font-semibold bg-indigo-700 text-white rounded-lg shadow-md">
+                            ${appState.currentPage} / ${totalPages || 1}
+                        </span>
+                        <button data-page="${appState.currentPage + 1}"
+                            ${appState.currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}
+                            class="page-btn px-3 py-1 text-sm rounded-lg bg-white border border-gray-300 text-indigo-700 disabled:opacity-50 hover:bg-amber-200 transition-colors">
+                            Berikutnya
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            return `
+                <div class="p-4 sm:p-8 lg:px-12">
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-indigo-900 mb-6 border-b-4 border-amber-500 pb-2">
+                        My Ranking List of Artist/Band
+                    </h1>
+
+                    <!-- Filter Alphabetik -->
+                    <div id="filter-container" class="flex flex-wrap gap-2 mb-6 p-3 bg-indigo-100 rounded-xl shadow-inner">
+                        ${filterButtons}
+                    </div>
+
+                    <!-- Controls (Entries Per Page, Language Filter & Search) -->
+                    <div class="flex flex-col sm:flex-row justify-start items-center mb-6 space-y-3 sm:space-y-0 sm:space-x-3">
+                        
+                        <!-- Show Entries -->
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <label for="entries-per-page" class="text-sm font-medium text-gray-700 whitespace-nowrap">Show</label>
+                            <div class="relative w-full">
+                                <select id="entries-per-page"
+                                    class="block appearance-none bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow min-w-[100px]">
+                                    ${[10, 25, 50, 100].map(num => `<option value="${num}" ${appState.entriesPerPage === num ? 'selected' : ''}>${num} entries</option>`).join('')}
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Language Filter -->
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <label for="language-filter" class="text-sm font-medium text-gray-700 whitespace-nowrap">Language</label>
+                            <div class="relative w-full">
+                                <select id="language-filter"
+                                    class="block appearance-none bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow min-w-[120px]">
+                                    ${uniqueLanguages.map(lang => `<option value="${lang}" ${appState.selectedLanguage === lang ? 'selected' : ''}>${lang}</option>`).join('')}
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search Input (Dibuat lebih besar) -->
+                        <div class="relative w-full sm:w-80">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                            <input type="text" id="search-input" placeholder="Cari Tag atau Artist..." value="${appState.searchTerm}"
+                                class="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-shadow"
+                            />
+                            ${appState.searchTerm ? `
+                                <button id="clear-search-btn" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700" aria-label="Hapus pencarian">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Grid Tampilan Artist -->
+                    ${artistGrid}
+
+                    <!-- Pagination -->
+                    ${paginationControls}
+                </div>
+            `;
+        };
+
+        const attachHomePageListeners = () => {
+            // Focus on search input after render (to prevent focus loss)
+            const searchInput = document.getElementById('search-input');
+            const currentSearchTerm = appState.searchTerm;
+            if (searchInput && currentSearchTerm) {
+                searchInput.focus();
+                // Set cursor to end
+                searchInput.value = ''; 
+                searchInput.value = currentSearchTerm;
+            }
+
+            // 1. Filter Alphabet
+            document.querySelectorAll('.filter-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    appState.currentFilter = e.target.closest('button').dataset.filter;
+                    appState.currentPage = 1;
+                    renderApp();
+                });
+            });
+
+            // 2. Entries Per Page
+            document.getElementById('entries-per-page').addEventListener('change', (e) => {
+                appState.entriesPerPage = Number(e.target.value);
+                appState.currentPage = 1;
+                renderApp();
+            });
+            
+            // 3. Language Filter
+            document.getElementById('language-filter').addEventListener('change', (e) => {
+                appState.selectedLanguage = e.target.value;
+                appState.currentFilter = 'All'; // Reset filter alfabetik
+                appState.currentPage = 1;
+                renderApp();
+            });
+
+            // 4. Search (Menggunakan Debounce)
+            const debouncedRender = debounce(renderApp, 200); // Tunggu 200ms setelah user berhenti mengetik
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    appState.searchTerm = e.target.value;
+                    appState.currentPage = 1;
+                    debouncedRender(); // Panggil render setelah debounce
+                });
+            }
+
+            const clearSearchBtn = document.getElementById('clear-search-btn');
+            if (clearSearchBtn) {
+                clearSearchBtn.addEventListener('click', () => {
+                    appState.searchTerm = '';
+                    appState.currentPage = 1;
+                    renderApp();
+                });
+            }
+
+            // 5. Pagination
+            document.querySelectorAll('.page-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const page = Number(e.target.closest('button').dataset.page);
+                    if (page) {
+                        appState.currentPage = page;
+                        renderApp();
+                    }
+                });
+            });
+
+            // 6. Artist Card Click
+            document.querySelectorAll('.artist-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const tag = e.currentTarget.dataset.tag;
+                    appState.selectedTag = tag;
+                    appState.view = 'detail';
+                    renderApp();
+                });
+            });
+        };
+
+        // --- DETAIL PAGE RENDERING & LOGIC ---
+
+        const getDetailData = () => {
+            let detailData = [];
+            const { rankData, selectedTag } = appState;
+
+            if (!rankData.length) return [];
+
+            if (selectedTag === 'Semua Artist') {
+                // Tampilkan semua data, filter berdasarkan bahasa jika dipilih
+                detailData = rankData.filter(item => {
+                    if (appState.selectedLanguage === 'All') return true;
+                    return (item.language || '').trim() === appState.selectedLanguage;
+                }).map((item, index) => ({ ...item, rank: index + 1 }));
+            } else {
+                // Tampilkan data berdasarkan tag
+                detailData = rankData
+                    .filter(item => {
+                        const tagsInItem = (item.tag || '').split(',').map(t => t.trim());
+                        return tagsInItem.includes(selectedTag);
+                    })
+                    // Tidak perlu filter bahasa lagi di sini karena artist grid sudah difilter bahasa
+                    .map((item, index) => ({ ...item, rank: index + 1 }));
+            }
+            return detailData;
+        };
+
+        const renderDetailPage = () => {
+            const detailData = getDetailData();
+
+            const tableRows = detailData.map((item) => `
+                <tr class="hover:bg-indigo-50 transition-colors">
+                    <td class="px-6 py-4 text-sm font-medium text-indigo-800">${item.rank}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${item.artist}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900 italic">${item.song}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-amber-600">${parseFloat(item.score).toFixed(1)} / 10</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.release_year}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button data-link="${item.link_youtube}"
+                            class="play-btn text-red-600 hover:text-red-800 transition-colors p-2 rounded-full hover:bg-red-100"
+                            title="Buka Link YouTube di Tab Baru">
+                            <i data-lucide="external-link" class="w-5 h-5 fill-current"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            return `
+                <div class="p-4 sm:p-8 lg:px-12">
+                    <button id="back-to-home-btn"
+                        class="flex items-center space-x-2 mb-6 text-indigo-700 hover:text-indigo-900 transition-colors font-medium hover:underline">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        <span>Kembali ke Daftar Artist</span>
+                    </button>
+
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-indigo-900 mb-6 border-b-4 border-amber-500 pb-2">
+                        Ranking: ${appState.selectedTag}
+                    </h1>
+                    
+                    ${appState.selectedLanguage !== 'All' ? `<p class="mb-4 text-sm text-indigo-600 font-semibold bg-indigo-50 p-2 rounded-lg inline-block shadow-sm">Difilter berdasarkan Bahasa: ${appState.selectedLanguage}</p>` : ''}
+
+
+                    ${detailData.length === 0 ? `
+                        <div class="text-center p-10 bg-white rounded-xl shadow-lg">
+                            <p class="mt-3 text-lg text-gray-600">Tidak ada lagu yang ditemukan untuk tag ini.</p>
+                        </div>
+                    ` : `
+                        <div class="overflow-x-auto rounded-xl shadow-2xl border-4 border-indigo-700">
+                            <table class="min-w-full divide-y divide-indigo-200">
+                                <thead class="bg-indigo-700 text-white sticky top-0">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider"># Rank</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Artist</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Song</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Score</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Release Year</th>
+                                        <th class="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Link</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    `}
+                </div>
+            `;
+        };
+
+        const attachDetailPageListeners = () => {
+            // 1. Back Button
+            document.getElementById('back-to-home-btn').addEventListener('click', () => {
+                appState.view = 'home';
+                appState.selectedTag = null;
+                renderApp();
+            });
+
+            // 2. Play Button (Membuka link YouTube di tab baru)
+            document.querySelectorAll('.play-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const link = e.currentTarget.dataset.link;
+                    if (link) {
+                        // Membuka link YouTube di tab baru
+                        window.open(link, '_blank');
+                    } else {
+                        console.error("Link YouTube tidak ditemukan.");
+                    }
+                });
+            });
+        };
+
+        // --- INITIALIZATION ---
+
+        const initApp = () => {
+            let isMounted = true;
+            let timeoutId;
+
+            const loadData = async () => {
+                if (!isMounted) return;
+
+                appState.isLoading = true;
+                appState.error = null;
+                renderApp(); // Render loading state
+
+                let fetchedRankData = [];
+                let fetchedImageResults = [];
+
+                try {
+                    // 1. Fetch data Rank
+                    fetchedRankData = await fetchCSV(RANK_CSV_URL);
+                    
+                    // 2. Fetch data Image
+                    try {
+                        fetchedImageResults = await fetchCSV(IMAGE_CSV_URL);
+                    } catch (e) {
+                        console.error("Gagal mengambil data Image dari GSheets. Menggunakan data mock.", e);
+                        fetchedImageResults = mockImageData;
+                    }
+                    
+                    // 3. Buat map dari tag ke link_image
+                    const imageMap = {};
+                    fetchedImageResults.forEach(item => {
+                        // Pastikan nama kolom sesuai: tag dan link_image
+                        if (item.tag && item.link_image) {
+                            imageMap[item.tag.trim()] = item.link_image.trim();
+                        }
+                    });
+                    imageMap['Semua Artist'] = 'https://placehold.co/400x400/000000/FFFFFF?text=ALL+ARTISTS';
+
+                    // Update State
+                    appState.rankData = fetchedRankData;
+                    appState.imageDataMap = imageMap;
+
+                } catch (err) {
+                    console.error("Kesalahan utama dalam fetching data:", err);
+                    appState.error = `Gagal memuat data. Pastikan kedua Google Sheets telah dipublikasikan ke web (File -> Share -> Publish to web). Detail: ${err.message}`;
+                } finally {
+                    appState.isLoading = false;
+                    renderApp(); // Render final state
+                }
+            };
+
+            // Polling/Pengecekan ketersediaan PapaParse sebelum memanggil loadData
+            const checkPapaAndLoad = () => {
+                if (typeof window.Papa !== 'undefined') {
+                    clearTimeout(timeoutId);
+                    loadData();
+                } else {
+                    timeoutId = setTimeout(checkPapaAndLoad, 100);
+                }
+            };
+
+            checkPapaAndLoad();
+
+            // Clean up listener (meskipun tidak sepenuhnya diperlukan di vanilla JS)
+            return () => {
+                isMounted = false;
+                clearTimeout(timeoutId);
+            };
+        };
+
+        // Jalankan aplikasi saat jendela dimuat
+        window.onload = initApp;
+
+        // Pasang ikon lucide setelah DOM dimuat jika sudah ada
+        document.addEventListener("DOMContentLoaded", () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
     </script>
 </body>
 </html>
